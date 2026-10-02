@@ -146,4 +146,6 @@ by: HChenX &amp; KhanhNguyen9872</string>
     <string name="format_gpu_details_load_clock">%1$d%% • %2$d MHz</string>
     <string name="format_gpu_details_clock">%d MHz</string>
 
+    <string name="title_fcm_fix">修复 FCM</string>
+    <string name="desc_fcm_fix">默认开启。约每 5 分钟请求 Google Play 服务发送心跳，辅助恢复失效的推送连接。不保证所有通知即时送达。由系统钩子为主用户运行，无需保持此应用打开。</string>
 </resources>

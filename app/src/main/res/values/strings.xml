@@ -209,4 +209,6 @@ by: HChenX &amp; KhanhNguyen9872</string>
     <string name="format_gpu_details_load_clock">%1$d%% • %2$d MHz</string>
     <string name="format_gpu_details_clock">%d MHz</string>
 
+    <string name="title_fcm_fix">Fix FCM</string>
+    <string name="desc_fcm_fix">Default ON. Requests a Google Play services heartbeat about every 5 minutes to help recover stale push connections. Best effort; not a guarantee of instant delivery. Runs in the system hook for the primary user, without keeping this app open.</string>
 </resources>

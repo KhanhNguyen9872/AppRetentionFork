@@ -209,4 +209,6 @@ bởi: HChenX &amp; KhanhNguyen9872</string>
     <string name="format_gpu_details_load_clock">%1$d%% • %2$d MHz</string>
     <string name="format_gpu_details_clock">%d MHz</string>
 
+    <string name="title_fcm_fix">Fix FCM</string>
+    <string name="desc_fcm_fix">Mặc định bật. Yêu cầu Google Play services gửi heartbeat khoảng mỗi 5 phút để hỗ trợ phục hồi kết nối push bị treo. Không đảm bảo mọi thông báo đến tức thì. Chạy trong hook hệ thống cho người dùng chính, không cần mở ứng dụng.</string>
 </resources>

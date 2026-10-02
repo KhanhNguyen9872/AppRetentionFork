@@ -80,6 +80,7 @@ public class MainActivity extends AppCompatActivity {
     private static final String KEY_RESTRICT_IMMEDIATE = "persist.hchen.restrict.immediate_kill";
     private static final String KEY_TIERED_ADJ = "persist.hchen.adj.perceptible.enable";
     private static final String KEY_KILL_SHIELD = "persist.hchen.killshield.enable";
+    private static final String KEY_FCM_FIX = "persist.hchen.fcm.fix.enable";
     private static final String KEY_DOZE = "persist.hchen.doze.opt.enable";
     private static final String KEY_NUBIA = "persist.hchen.nubia.opt.enable";
     private static final String KEY_HIBERNATION = "persist.hchen.hibernation.opt.enable";
@@ -201,6 +202,7 @@ public class MainActivity extends AppCompatActivity {
     private MaterialSwitch switchTieredAdj;
     private MaterialSwitch switchKillShield;
     private MaterialSwitch switchDoze;
+    private MaterialSwitch switchFcmFix;
     private MaterialSwitch switchNubia;
     private MaterialSwitch switchHibernation;
     private MaterialSwitch switchAutoStart;
@@ -515,6 +517,7 @@ public class MainActivity extends AppCompatActivity {
         switchTieredAdj = findViewById(R.id.switchTieredAdj);
         switchKillShield = findViewById(R.id.switchKillShield);
         switchDoze = findViewById(R.id.switchDoze);
+        switchFcmFix = findViewById(R.id.switchFcmFix);
         switchNubia = findViewById(R.id.switchNubia);
         switchHibernation = findViewById(R.id.switchHibernation);
         switchAutoStart = findViewById(R.id.switchAutoStart);
@@ -606,6 +609,7 @@ public class MainActivity extends AppCompatActivity {
         bindSwitch(switchTieredAdj, KEY_TIERED_ADJ, true);
         bindSwitch(switchKillShield, KEY_KILL_SHIELD, true);
         bindSwitch(switchDoze, KEY_DOZE, true);
+        bindSwitch(switchFcmFix, KEY_FCM_FIX, true);
         bindSwitch(switchNubia, KEY_NUBIA, true);
         bindSwitch(switchHibernation, KEY_HIBERNATION, true);
         bindSwitch(switchAutoStart, KEY_AUTOSTART, true);
@@ -623,7 +627,7 @@ public class MainActivity extends AppCompatActivity {
         sw.setChecked(val);
         // Seed or repair the persistent property without treating restoration as a new click.
         if (propertyValue.isEmpty() || propertyChoice != val) {
-            RootTool.setBooleanPropVerified(key, val, null);
+            RootTool.setBooleanPropVerified(key, val, success -> notifyFcmConfigChanged(key, success));
         }
         java.util.concurrent.atomic.AtomicBoolean internalUpdate = new java.util.concurrent.atomic.AtomicBoolean(false);
         sw.setOnCheckedChangeListener((buttonView, isChecked) -> {
@@ -643,14 +647,26 @@ public class MainActivity extends AppCompatActivity {
                 if (isChecked) refreshRunningProcesses();
             }
             sw.setEnabled(false);
-            RootTool.setBooleanPropVerified(key, isChecked, success -> runOnUiThread(() -> {
-                if (!success) {
-                    // Keep the saved selection. bindSwitch retries synchronization next launch.
-                    Toast.makeText(this, R.string.toast_setting_sync_deferred, Toast.LENGTH_LONG).show();
-                }
-                sw.setEnabled(true);
-            }));
+            RootTool.setBooleanPropVerified(key, isChecked, success -> {
+                notifyFcmConfigChanged(key, success);
+                runOnUiThread(() -> {
+                    if (!success) {
+                        // Keep the saved selection. bindSwitch retries synchronization next launch.
+                        Toast.makeText(this, R.string.toast_setting_sync_deferred, Toast.LENGTH_LONG).show();
+                    }
+                    sw.setEnabled(true);
+                });
+            });
         });
+    }
+
+    private void notifyFcmConfigChanged(String key, boolean success) {
+        if (success && KEY_FCM_FIX.equals(key)) {
+            // Runs on RootTool worker, not the UI thread. DUMP permission protects the receiver.
+            RootTool.runCommand("am broadcast --user 0 -a "
+                + com.hchen.appretention.hook.system.opt.FcmFixOpt.ACTION_CONFIG_CHANGED
+                + " -p android");
+        }
     }
 
     private void checkAndPromptRoot() {
