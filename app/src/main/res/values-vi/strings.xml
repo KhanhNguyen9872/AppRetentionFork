@@ -1,0 +1,223 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">AppRetentionFork</string>
+    <string name="app_more">Cải thiện khả năng giữ đa nhiệm ứng dụng chạy nền.
+bởi: HChenX &amp; KhanhNguyen9872</string>
+
+    <!-- System Status Card -->
+    <string name="title_system_framework">Khung Hệ Thống (System Framework)</string>
+    <string name="badge_status_active">Chưa xác minh hook</string>
+    <string name="status_root_detecting">Phạm vi: android (system_server) • Root: Đang kiểm tra...</string>
+    <string name="status_root_requesting">Phạm vi: android (system_server) • Root: Đang yêu cầu quyền...</string>
+    <string name="status_root_active">Phạm vi: android (system_server) • Root: Hoạt động (KernelSU/Magisk/APatch)</string>
+    <string name="status_root_limited">Phạm vi: android (system_server) • Root: Chưa cấp quyền (Chế độ hạn chế)</string>
+    <string name="status_killshield_active">KillShield: đã bật cài đặt; chưa xác minh hook</string>
+    <string name="status_fork_extensions_disabled">Baseline an toàn: đã tắt các hook hệ thống chỉ có ở bản fork</string>
+    <string name="toast_root_active">Root: Hoạt động với đầy đủ quyền Kernel &amp; System</string>
+
+    <!-- Hardware Monitor Card -->
+    <string name="title_hardware_monitor">Giám Sát Phần Cứng</string>
+    <string name="label_auto_refresh">Tự động: 5s</string>
+    <string name="label_ram_memory">Bộ Nhớ RAM</string>
+    <string name="format_ram_details">%1$.1f GB / %2$.1f GB (%3$d%%)</string>
+    <string name="format_ram_subtext">Khả dụng: %1$.1f GB • LMKD: %2$dx • %3$s</string>
+    <string name="format_ram_subtext_notype">Khả dụng: %1$.1f GB • LMKD: %2$dx</string>
+    <string name="label_cpu_processor">Vi Xử Lý CPU</string>
+    <string name="format_cpu_details">%d%% Tải</string>
+    <string name="format_cpu_subtext">%1$s • %2$d nhân</string>
+    <string name="format_cpu_subtext_nocores">%s</string>
+    <string name="format_cpu_root_required">%1$s • %2$d nhân</string>
+    <string name="format_cpu_identity">Mã CPU: %1$s • ABI: %2$s</string>
+    <string name="format_cpu_topology">Cụm nhân: %s</string>
+    <string name="label_internal_storage">Bộ Nhớ Trong</string>
+    <string name="format_storage_details">%1$.1f GiB / %2$.1f GiB (%3$d%%)</string>
+    <string name="format_storage_subtext">Còn trống: %.1f GiB</string>
+    <string name="format_storage_subtext_type">Còn trống: %1$.1f GiB • %2$s</string>
+    <string name="format_storage_subtext_physical">Còn trống: %1$.1f GiB • Vật lý: %2$.0f GB</string>
+    <string name="format_storage_subtext_physical_type">Còn trống: %1$.1f GiB • Vật lý: %2$.0f GB • %3$s</string>
+
+    <!-- Keep-Alive List Card -->
+    <string name="title_keep_alive_list">Danh Sách Giữ Chạy Nền (Keep-Alive)</string>
+    <string name="desc_keep_alive_list">Yêu cầu giữ nền tốt hơn cho ứng dụng đã chọn. Vẫn có thể bị lỗi, buộc dừng hoặc diệt khi thiếu bộ nhớ.</string>
+    <string name="format_keep_alive_summary">Giữ chạy nền: %d ứng dụng</string>
+    <string name="btn_select_keep_alive_apps">Chọn Ứng Dụng Giữ Chạy Nền</string>
+    <string name="toast_saved_keep_alive_apps">Đã lưu %d ứng dụng Giữ chạy nền</string>
+
+    <!-- Retention Controls Card -->
+    <string name="title_retention_controls">Cấu Hình Giữ Đa Nhiệm</string>
+    <string name="title_fork_extensions">Bật các hook mở rộng của bản fork</string>
+    <string name="desc_fork_extensions">Công tắc an toàn tổng cho các hook chỉ có ở bản fork. Khi tắt, module giữ hành vi của upstream. Cần khởi động lại sau khi thay đổi.</string>
+    <string name="toast_reboot_required">Đã xác minh cài đặt. Hãy khởi động lại để áp dụng thay đổi hook.</string>
+    <string name="toast_setting_write_failed">Không thể xác minh cài đặt hệ thống. Đã khôi phục giá trị trước đó.</string>
+    <string name="toast_setting_save_failed">Không thể lưu lựa chọn.</string>
+    <string name="toast_setting_sync_deferred">Đã lưu lựa chọn. Ứng dụng sẽ thử đồng bộ lại khi mở lần sau.</string>
+    <string name="toast_appretention_restriction_locked">AppRetention luôn thuộc danh sách Hạn chế và không thể gán Giữ nền.</string>
+    <string name="title_tiered_adj">Phân Tầng Kẹp Giữ Nền</string>
+    <string name="desc_tiered_adj">Đẩy các app ngầm gần nhất lên phân tầng Perceptible (ADJ 200-245) để giữ trạng thái sống liên tục.</string>
+    <string name="title_killshield">Khiên Bảo Vệ KillShield</string>
+    <string name="desc_killshield">Chặn hệ thống tự động diệt app do quá giờ, tăng tải CPU hoặc dọn dẹp bộ nhớ đệm, nhưng vẫn cho phép vuốt tắt thủ công.</string>
+    <string name="title_doze">Miễn Trừ Chế Độ Doze Tự Động</string>
+    <string name="desc_doze">Miễn các kiểm tra danh sách trắng Doze tương thích cho ứng dụng đủ điều kiện; loại trừ app Hạn chế. Chính sách nhàn rỗi khác vẫn có thể áp dụng.</string>
+    <string name="title_nubia">Khiên Chống Diệt App RedMagic / Nubia</string>
+    <string name="desc_nubia">Vô hiệu hóa trình dọn dẹp bộ nhớ NeoPower, SmartEngine và GameSpace trên thiết bị RedMagic.</string>
+    <string name="title_hibernation">Tắt Đóng Băng Ứng Dụng (App Hibernation)</string>
+    <string name="desc_hibernation">Chặn yêu cầu ngủ đông tương thích cho ứng dụng đủ điều kiện. Tự đặt lại quyền là chính sách riêng.</string>
+    <string name="title_autostart">Bỏ Qua Giới Hạn Tự Khởi Chạy Của OEM</string>
+    <string name="desc_autostart">Bỏ qua kiểm tra khởi chạy OEM tương thích có kết quả boolean; khả dụng tùy ROM.</string>
+
+    <!-- Active Background Processes Card -->
+    <string name="title_active_processes">Tiến Trình Chạy Ngầm Đang Hoạt Động</string>
+    <string name="format_process_count">%d ứng dụng</string>
+    <string name="status_root_not_granted_scanning">Root: Chưa cấp quyền (Quét giới hạn)</string>
+
+    <!-- Retention Log Card -->
+    <string name="title_retention_log">Nhật Ký Hoạt Động (Log)</string>
+    <string name="btn_clear_log">Xóa</string>
+    <string name="placeholder_log">Nhật ký sẽ xuất hiện tại đây khi có sự kiện can thiệp đa nhiệm...</string>
+
+    <!-- Root Permission Explanation Dialog -->
+    <string name="dialog_root_title">Quyền Root Chưa Được Cấp</string>
+    <string name="dialog_root_message">Quyền root không chứng minh hook đã hoạt động. Hãy bật module trong framework Xposed tương thích và chọn System Framework.\n\nCần root để đọc logcat hệ thống, thông số tiến trình và đồng bộ thuộc tính. Sau khi cấp root, làm mới trạng thái để lấy số hook đã đăng ký.</string>
+    <string name="btn_dialog_retry_root">Thử lại / Cấp quyền</string>
+    <string name="btn_dialog_continue_limited">Tiếp tục (Chế độ hạn chế)</string>
+
+    <!-- Keep-Alive Selection Dialog -->
+    <string name="dialog_keep_alive_title">Danh Sách Giữ Chạy Nền</string>
+    <string name="dialog_keep_alive_subtitle">Ứng dụng đã chọn được áp dụng chính sách giữ nền, không miễn nhiễm hoàn toàn với việc bị diệt.</string>
+    <string name="hint_search_apps">Tìm kiếm ứng dụng...</string>
+    <string name="btn_cancel">Hủy</string>
+    <string name="btn_save">Lưu</string>
+    <!-- Process Actions -->
+    <string name="btn_kill_process">Đóng</string>
+    <string name="toast_killed_process">Đã chấp nhận lệnh diệt / buộc dừng %s</string>
+    <string name="format_process_pid">PID: %1$d - %2$s</string>
+    <!-- Navigation Tabs -->
+    <string name="nav_dashboard">Tổng quan</string>
+    <string name="nav_keep_alive">Keep-Alive</string>
+    <string name="nav_controls">Thiết lập</string>
+    <string name="nav_logs">Nhật ký</string>
+
+    <!-- Keep-Alive Dedicated Page -->
+    <string name="tab_keep_alive_title">Danh sách Keep-Alive</string>
+    <string name="tab_keep_alive_desc">Ứng dụng được yêu cầu áp dụng chính sách giữ nền.</string>
+    <string name="chip_all_apps">Tất cả (%d)</string>
+    <string name="chip_keep_alive_only">Đang giữ (%d)</string>
+    <string name="badge_keep_alive_locked">GIỮ CHẠY NỀN</string>
+    <string name="toast_keep_alive_added">Đã ghim %s vào Keep-Alive</string>
+    <string name="toast_keep_alive_removed">Đã bỏ %s khỏi Keep-Alive</string>
+
+    <!-- Controls & Logs Pages -->
+    <string name="desc_controls_header">Cấu hình quy tắc giữ app và chặn trình diệt ngầm của hệ thống / OEM.</string>
+    <string name="title_logs_header">Nhật ký Hook Hệ Thống</string>
+    <string name="btn_copy_log">Sao chép</string>
+    <string name="toast_log_copied">Đã sao chép log vào clipboard</string>
+    <string name="toast_log_cleared">Đã xóa nhật ký hiển thị của module; giữ nguyên nhật ký ứng dụng khác</string>
+    <string name="nav_settings">Cài đặt</string>
+    <string name="title_settings">Cài đặt &amp; Tối ưu hóa</string>
+    <string name="desc_settings">Quản lý hành vi nền, cấu hình hook hệ thống và chính sách giới hạn</string>
+    <string name="title_immediate_kill">Chặn nền tức thì khi rời màn hình</string>
+    <string name="desc_immediate_kill">Đóng ngay lập tức các ứng dụng trong danh sách Cấm chạy ngầm khi thoát ra màn hình chính hoặc tắt màn hình (không cần chờ xóa đa nhiệm)</string>
+    <string name="mode_keep_alive">Giữ chạy ngầm</string>
+    <string name="mode_restricted">Cấm chạy ngầm</string>
+    <string name="chip_restricted_only">Đang cấm (%d)</string>
+    <string name="badge_restricted">CẤM NỀN</string>
+    <string name="toast_restricted_added">Đã thêm %s vào danh sách Cấm chạy ngầm</string>
+    <string name="toast_restricted_removed">Đã xóa %s khỏi danh sách Cấm chạy ngầm</string>
+    <string name="summary_restricted_desc">Các ứng dụng trong danh sách này sẽ bị chặn và đóng hoàn toàn khi bạn vuốt xóa khỏi Đa nhiệm.</string>
+    <string name="format_restricted_summary">%d ứng dụng</string>
+
+    <!-- System App Restriction Warning & Hints -->
+    <string name="dialog_system_app_restrict_title">Cảnh báo ứng dụng hệ thống</string>
+    <string name="dialog_system_app_restrict_message">Chặn chạy ngầm cho ứng dụng hệ thống \"%s\" có thể gây lỗi hệ thống, mất thông báo hoặc dịch vụ hoạt động bất thường.\n\nBạn có chắc chắn muốn hạn chế ứng dụng này?</string>
+    <string name="btn_yes_continue">Có, tiếp tục</string>
+    <string name="btn_no_cancel">Hủy bỏ</string>
+    <string name="toast_app_is_restricted_hint">\"%s\" đang bị hạn chế chạy ngầm. Hãy bỏ cấm ở tab Cấm chạy ngầm trước nếu muốn giữ nền.</string>
+    <string name="badge_restricted_short">HẠN CHẾ NỀN</string>
+
+    <!-- Pro Suite Strings -->
+    <string name="section_retention_engine">Mở rộng Giới hạn Nền</string>
+    <string name="section_retention_desc">Cơ chế mở rộng bộ nhớ đệm và vượt qua trình dọn dẹp hệ thống</string>
+    <string name="section_restriction_engine">Chính sách Chặn Nền</string>
+    <string name="section_restriction_desc">Ngăn chặn chạy ngầm, tự khởi động lại và đánh thức cho app bị cấm</string>
+    <string name="chip_filter_user">Người dùng</string>
+    <string name="chip_filter_system">Hệ thống</string>
+    <string name="dialog_quick_switch_title">Chuyển sang Giữ chạy ngầm?</string>
+    <string name="dialog_quick_switch_message">Ứng dụng \"%s\" hiện đang nằm trong danh sách Cấm chạy ngầm. Bạn có muốn bỏ cấm và ghim giữ nền cho ứng dụng này ngay không?</string>
+    <string name="btn_quick_switch_confirm">Bỏ cấm &amp; Ghim</string>
+    <string name="badge_proc_keep_alive">GIỮ NỀN</string>
+    <string name="badge_proc_restricted">CẤM NỀN</string>
+
+
+    <string name="desc_logs_header">Theo dõi tiến trình ngầm, sự kiện hook và tối ưu ADJ thời gian thực.</string>
+    <string name="btn_save_log">Lưu log</string>
+    <string name="btn_refresh_log">Làm mới</string>
+    <string name="toast_log_saved">Đã lưu nhật ký vào: %s</string>
+    <string name="toast_log_empty">Không có nhật ký nào để lưu</string>
+    <string name="title_share_log">Chia sẻ nhật ký AppRetention</string>
+
+    <!-- Process Details Sheet -->
+    <string name="sheet_title_process_details">Chi tiết tiến trình</string>
+    <string name="sheet_metrics_title">THÔNG SỐ &amp; CHUẨN ĐOÁN</string>
+    <string name="sheet_policy_title">CHÍNH SÁCH BẢO LƯU NỀN</string>
+    <string name="sheet_sw_keep_alive_title">Giữ chạy ngầm</string>
+    <string name="sheet_sw_keep_alive_desc">Khóa tiến trình, ngăn hệ thống dọn dẹp khi thiếu RAM.</string>
+    <string name="sheet_sw_restrict_title">Hạn chế chạy ngầm</string>
+    <string name="sheet_sw_restrict_desc">Cấm chạy nền, tự động dọn dẹp hoặc diệt tiến trình khi rời ứng dụng.</string>
+    <string name="sheet_btn_kill">Diệt tiến trình</string>
+    <string name="sheet_btn_force_stop">Buộc dừng</string>
+    <string name="sheet_btn_open_app">Mở ứng dụng</string>
+    <string name="sheet_btn_app_info">Cài đặt ứng dụng</string>
+    <string name="sheet_type_system">HỆ THỐNG</string>
+    <string name="sheet_type_user">NGƯỜI DÙNG</string>
+    <string name="sheet_label_pid">PID</string>
+    <string name="sheet_label_uid">UID</string>
+    <string name="sheet_label_ram">RAM</string>
+    <string name="sheet_label_adj">OOM ADJ</string>
+    <string name="sheet_status_vip">Đã yêu cầu giữ nền (xem ADJ đo được)</string>
+    <string name="sheet_status_restricted">Bị hạn chế (Dọn dẹp khi thoát / thiếu RAM)</string>
+    <string name="sheet_status_foreground">Tiến trình tiền cảnh / Đang hiển thị</string>
+    <string name="sheet_status_perceptible">Tiến trình có thể nhận biết / Âm thanh / Thông báo</string>
+    <string name="sheet_status_service">Tiến trình dịch vụ nền</string>
+    <string name="sheet_status_cached">Tiến trình bộ nhớ đệm (Ưu tiên thấp)</string>
+    <string name="toast_force_stop_success">Đã chấp nhận lệnh buộc dừng %s</string>
+    <string name="toast_copied_to_clipboard">Đã sao chép %s vào bộ nhớ tạm</string>
+
+    <string name="loading_processes">Đang quét tiến trình chạy ngầm...</string>
+    <string name="label_gpu_display">Đồ Họa &amp; Màn Hình</string>
+    <string name="label_battery_power">Pin &amp; Nhiệt Độ</string>
+    <string name="label_device_platform">Thiết Bị &amp; Nền Tảng</string>
+    <string name="loading_hardware_identity">Đang kiểm tra nhận dạng thiết bị...</string>
+    <string name="format_device_platform">%1$s\n%2$s</string>
+    <string name="format_gpu_vendor">Hãng GPU: %s</string>
+    <string name="format_gpu_driver">Trình điều khiển: %s</string>
+    <string name="format_battery_details">%1$d%% • %2$.1f°C</string>
+    <string name="format_battery_details_notemp">%d%%</string>
+    <string name="format_battery_subtext">%1$s • %2$s • %3$s</string>
+    <string name="battery_status_charging">Đang sạc</string>
+    <string name="battery_status_discharging">Đang xả</string>
+    <string name="battery_status_full">Đã đầy</string>
+    <string name="battery_health_good">Pin tốt</string>
+    <string name="battery_health_overheat">Quá nhiệt</string>
+    <string name="battery_health_cold">Quá lạnh</string>
+    <string name="battery_health_dead">Hỏng</string>
+    <string name="format_battery_mah_details">%1$d / %2$d mAh (%3$d%%) • %4$.1f°C</string>
+    <string name="format_battery_mah_notemp">%1$d / %2$d mAh (%3$d%%)</string>
+    <string name="format_battery_rate_charging">%1$s (+%2$d mA)</string>
+    <string name="format_battery_rate_discharging">%1$s (-%2$d mA)</string>
+
+    <string name="format_gpu_details_load">%d%%</string>
+    <string name="format_gpu_details_load_clock">%1$d%% • %2$d MHz</string>
+    <string name="format_gpu_details_clock">%d MHz</string>
+
+    <string name="title_fcm_fix">Fix FCM</string>
+    <string name="desc_fcm_fix">Mặc định bật. Yêu cầu Google Play services gửi heartbeat khoảng mỗi 5 phút để hỗ trợ phục hồi kết nối push bị treo. Không đảm bảo mọi thông báo đến tức thì. Chạy trong hook hệ thống cho người dùng chính, không cần mở ứng dụng.</string>
+    <string name="badge_hooks_registered">Đã đăng ký %d hook; chưa xác minh tác dụng</string>
+    <string name="status_killshield_off">KillShield: TẮT</string>
+    <string name="status_killshield_unverified">KillShield: đã bật; chưa xác minh đăng ký hook</string>
+    <string name="status_killshield_unavailable">KillShield: chưa đăng ký được hook tương thích</string>
+    <string name="status_killshield_registered">KillShield: BẬT; đã đăng ký %d hook (chưa xác minh tác dụng)</string>
+    <string name="status_killshield_pending">KillShield: cài đặt đã lưu khác hệ thống; chờ đồng bộ</string>
+    <string name="logs_no_records">Chưa có nhật ký module mới. Bật module cho System Framework và khởi động lại sau khi cài bản cập nhật. Cần root để đọc logcat của tiến trình hệ thống.</string>
+    <string name="logs_clear_incomplete">Đã xóa nhật ký hiển thị; chưa thể làm rỗng một số tệp. Hãy cấp root và thử lại.</string>
+    <string name="toast_process_action_failed">Lệnh xử lý tiến trình thất bại hoặc chưa có root; làm mới để kiểm tra.</string>
+</resources>

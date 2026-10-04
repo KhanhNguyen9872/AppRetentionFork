@@ -1,0 +1,59 @@
+/*
+ * This file is part of AppRetentionHook.
+
+ * AppRetentionHook is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License.
+
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+
+ * You should have received a copy of the GNU General Public License
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
+
+ * Copyright (C) 2023-2025 HChenX
+ */
+package com.hchen.appretention.hook.system;
+
+import static com.hchen.appretention.data.method.SystemMethod.performReceive;
+import static com.hchen.appretention.data.path.SystemClass.UserController$3;
+import static com.hchen.appretention.data.prop.SystemProp.FALSE;
+import static com.hchen.appretention.data.prop.SystemProp.TRUE;
+import static com.hchen.appretention.log.SaveLog.USER_UNLOCKED_COMPLETED_PROP;
+
+import android.content.Intent;
+import android.os.Bundle;
+
+import com.hchen.hooktool.HCBase;
+import com.hchen.hooktool.hook.IHook;
+import com.hchen.hooktool.log.AndroidLog;
+import com.hchen.hooktool.utils.SystemPropTool;
+
+/**
+ * 监听用户重启后解锁的事件
+ *
+ * @author 焕晨HChen
+ * @deprecated
+ */
+@Deprecated
+// @HookCondition(targetPackage = "android")
+public class UserUnlockListener extends HCBase {
+    @Override
+    public void init() {
+        SystemPropTool.setProp(USER_UNLOCKED_COMPLETED_PROP, FALSE);
+        hookMethod(UserController$3,
+            performReceive,
+            Intent.class, int.class, String.class, Bundle.class, boolean.class, boolean.class, int.class,
+            new IHook() {
+                @Override
+                public void after() {
+                    SystemPropTool.setProp(USER_UNLOCKED_COMPLETED_PROP, TRUE);
+                    AndroidLog.logI(TAG, "user unlocked completed!!!!");
+                }
+            }
+        );
+    }
+}

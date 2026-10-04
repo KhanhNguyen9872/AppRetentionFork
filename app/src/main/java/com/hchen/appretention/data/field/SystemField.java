@@ -1,0 +1,69 @@
+/*
+ * This file is part of AppRetentionHook.
+
+ * AppRetentionHook is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License.
+
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+
+ * You should have received a copy of the GNU General Public License
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
+
+ * Copyright (C) 2023-2025 HChenX
+ */
+package com.hchen.appretention.data.field;
+
+/**
+ * 系统框架字段名
+ *
+ * @author 焕晨HChen
+ */
+public class SystemField {
+    public static final String mNextNoKillDebugMessageTime = "mNextNoKillDebugMessageTime";
+    public static final String mGlobalMaxNumTasks = "mGlobalMaxNumTasks";
+    public static final String mMinNumVisibleTasks = "mMinNumVisibleTasks";
+    public static final String mKillBgRestrictedAndCachedIdle = "mKillBgRestrictedAndCachedIdle";
+    public static final String CUR_MAX_CACHED_PROCESSES = "CUR_MAX_CACHED_PROCESSES";
+    public static final String CUR_MAX_EMPTY_PROCESSES = "CUR_MAX_EMPTY_PROCESSES";
+    public static final String CUR_TRIM_CACHED_PROCESSES = "CUR_TRIM_CACHED_PROCESSES";
+    public static final String CUR_TRIM_EMPTY_PROCESSES = "CUR_TRIM_EMPTY_PROCESSES";
+    public static final String PROACTIVE_KILLS_ENABLED = "PROACTIVE_KILLS_ENABLED";
+    public static final String USE_MODERN_TRIM = "USE_MODERN_TRIM";
+    public static final String MAX_PHANTOM_PROCESSES = "MAX_PHANTOM_PROCESSES";
+    public static final String MAX_CACHED_PROCESSES = "MAX_CACHED_PROCESSES";
+    public static final String mOomMinFree = "mOomMinFree";
+    public static final String mOomAdj = "mOomAdj";
+    public static final String NONE = "NONE";
+    public static final String SOME = "SOME";
+    public static final String FULL = "FULL";
+    public static final String ANON_MORE = "ANON_MORE";
+    public static final String ANON = "ANON";
+    public static final String SHELL = "SHELL";
+    public static final String APP = "APP";
+    public static final String mUseCompaction = "mUseCompaction";
+    public static final String mUseBootCompact = "mUseBootCompact";
+    public static final String mState = "mState";
+    public static final String mOptRecord = "mOptRecord";
+    public static final String mCompactionHandler = "mCompactionHandler";
+    public static final String mCachedAppOptimizerThread = "mCachedAppOptimizerThread";
+    public static final String mPendingCompactionProcesses = "mPendingCompactionProcesses";
+    public static final String mCustomOomMinFree = "mCustomOomMinFree";
+    public static final String mMemFactorOverride = "mMemFactorOverride";
+    public static final String isChangedOomMinFree = "isChangedOomMinFree";
+    public static final String mContext = "mContext";
+    public static final String mCachedAppOptimizer = "mCachedAppOptimizer";
+    public static final String mProcessList = "mProcessList";
+    public static final String mService = "mService";
+    public static final String info = "info";
+    public static final String processName = "processName";
+    public static final String uid = "uid";
+    public static final String isolated = "isolated";
+    public static final String isSdkSandbox = "isSdkSandbox";
+    public static final String mLruProcessServiceStart = "mLruProcessServiceStart";
+    public static final String isPersistent = "isPersistent";
+}

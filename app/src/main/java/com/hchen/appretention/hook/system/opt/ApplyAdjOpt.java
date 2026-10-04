@@ -1,0 +1,493 @@
+/*
+ * This file is part of AppRetentionHook.
+
+ * AppRetentionHook is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License.
+
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+
+ * You should have received a copy of the GNU General Public License
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
+
+ * Copyright (C) 2023-2025 HChenX
+ */
+package com.hchen.appretention.hook.system.opt;
+
+import static com.hchen.appretention.data.field.SystemField.mContext;
+import static com.hchen.appretention.data.method.SystemMethod.applyOomAdjLSP;
+import static com.hchen.appretention.data.method.SystemMethod.getCurProcState;
+import static com.hchen.appretention.data.method.SystemMethod.getLruProcessesLOSP;
+import static com.hchen.appretention.data.method.SystemMethod.procStateToImportance;
+import static com.hchen.appretention.data.method.SystemMethod.removeLruProcessLocked;
+import static com.hchen.appretention.data.method.SystemMethod.setCurAdj;
+import static com.hchen.appretention.data.method.SystemMethod.setCurRawAdj;
+import static com.hchen.appretention.data.method.SystemMethod.systemReady;
+import static com.hchen.appretention.data.path.HyperClass.ServiceThread;
+import static com.hchen.appretention.data.path.SystemClass.ActiveUids;
+import static com.hchen.appretention.data.path.SystemClass.ActivityManager$RunningAppProcessInfo;
+import static com.hchen.appretention.data.path.SystemClass.ActivityManagerService;
+import static com.hchen.appretention.data.path.SystemClass.Injector;
+import static com.hchen.appretention.data.path.SystemClass.OomAdjuster;
+import static com.hchen.appretention.data.path.SystemClass.ProcessList;
+import static com.hchen.appretention.data.path.SystemClass.ProcessRecord;
+import static com.hchen.appretention.data.path.SystemClass.TimingsTraceAndSlog;
+import static com.hchen.hooktool.core.CoreTool.callMethod;
+import static com.hchen.hooktool.core.CoreTool.callStaticMethod;
+import static com.hchen.hooktool.core.CoreTool.existsConstructor;
+import static com.hchen.hooktool.core.CoreTool.existsMethod;
+import static com.hchen.hooktool.core.CoreTool.findConstructor;
+import static com.hchen.hooktool.core.CoreTool.findMethod;
+import static com.hchen.hooktool.core.CoreTool.getField;
+import static com.hchen.hooktool.core.CoreTool.hook;
+import static com.hchen.hooktool.core.CoreTool.hookMethod;
+import static com.hchen.appretention.log.XposedLog.logD;
+import static com.hchen.appretention.log.XposedLog.logW;
+
+import android.annotation.SuppressLint;
+import android.content.Context;
+import android.content.pm.ApplicationInfo;
+import android.content.pm.PackageInfo;
+import android.content.pm.PackageManager;
+import android.content.pm.Signature;
+import android.content.pm.SigningInfo;
+
+import androidx.annotation.NonNull;
+
+import com.hchen.appretention.data.field.SystemField;
+import com.hchen.hooktool.hook.IHook;
+import com.hchen.appretention.log.XposedLog;
+import com.hchen.hooktool.utils.SystemPropTool;
+
+import java.lang.reflect.Constructor;
+import java.lang.reflect.Method;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Objects;
+import java.util.Optional;
+
+/**
+ * Adj 计算
+ *
+ * @author 焕晨HChen
+ */
+public class ApplyAdjOpt {
+    private static final String TAG = "ApplyAdjOpt";
+    private static final ArrayList<ProcessIndexRecord> mPreviousBackgroundAppList = new ArrayList<>();
+    private static final HashSet<Object> mProcessRecordMap = new HashSet<>();
+    private static final HashSet<String> mUserAppMap = new HashSet<>();
+    private static final HashSet<String> mSystemSigningAppMap = new HashSet<>();
+    private static Object mService;
+    private static Object mProcessList;
+    private static final int PERCEPTIBLE_TIER_MIN_ADJ = 200;
+    private static final int PERCEPTIBLE_TIER_MAX_ADJ = 249;
+    private static final int PERCEPTIBLE_SUB_MIN_ADJ = 250;
+    private static final int PERCEPTIBLE_SUB_MAX_ADJ = 299;
+    private static final int SERVICE_TIER_MIN_ADJ = 500;
+    private static final int MAIN_PROCESS_MIN_ADJ = 600;
+    private static final int MAIN_PROCESS_MAX_ADJ = 699;
+    private static final int SUB_PROCESS_MIN_ADJ = 700;
+    private static final int SUB_PROCESS_MAX_ADJ = 799;
+
+    public static void init() {
+        if (!isEnabled()) {
+            logD(TAG, "Adj opt is disabled!!");
+            return;
+        }
+
+        Constructor<?> oomAdjuster = null;
+        if (existsConstructor(OomAdjuster, ActivityManagerService, ProcessList, ActiveUids, ServiceThread, Injector)) {
+            oomAdjuster = findConstructor(OomAdjuster, ActivityManagerService, ProcessList, ActiveUids, ServiceThread, Injector);
+        } else if (existsConstructor(OomAdjuster, ActivityManagerService, ProcessList, ActiveUids, ServiceThread))
+            oomAdjuster = findConstructor(OomAdjuster, ActivityManagerService, ProcessList, ActiveUids, ServiceThread);
+        if (oomAdjuster == null) {
+            logW(TAG, "oomAdjuster is null! can't use ApplyAdjOpt!!");
+            return;
+        }
+
+        hook(oomAdjuster,
+            new IHook() {
+                @Override
+                public void after() {
+                    mService = getThisField(SystemField.mService);
+                    mProcessList = getThisField(SystemField.mProcessList);
+
+                    mPreviousBackgroundAppList.clear();
+                    mUserAppMap.clear();
+                    mSystemSigningAppMap.clear();
+                }
+            }
+        );
+
+        Method applyOomAdjLSPMethod = null;
+        if (existsMethod(OomAdjuster, applyOomAdjLSP, ProcessRecord, boolean.class, long.class, long.class, int.class, boolean.class))
+            applyOomAdjLSPMethod = findMethod(OomAdjuster, applyOomAdjLSP, ProcessRecord, boolean.class, long.class, long.class, int.class, boolean.class);
+        else if (existsMethod(OomAdjuster, applyOomAdjLSP, ProcessRecord, boolean.class, long.class, long.class, int.class)) {
+            applyOomAdjLSPMethod = findMethod(OomAdjuster, applyOomAdjLSP, ProcessRecord, boolean.class, long.class, long.class, int.class);
+        } else if (existsMethod(OomAdjuster, applyOomAdjLSP, ProcessRecord, boolean.class, long.class, long.class)) {
+            applyOomAdjLSPMethod = findMethod(OomAdjuster, applyOomAdjLSP, ProcessRecord, boolean.class, long.class, long.class);
+        }
+        if (applyOomAdjLSPMethod == null) {
+            logW(TAG, "applyOomAdjLSPMethod is null! can't use ApplyAdjOpt!!");
+            return;
+        }
+
+        hookSystemReady();
+
+        hookMethod(ProcessList,
+            removeLruProcessLocked,
+            ProcessRecord,
+            new IHook() {
+                @Override
+                public void after() {
+                    if (mService == null) return;
+
+                    synchronized (mService) {
+                        Object app = getArg(0);
+                        if (mProcessRecordMap.contains(app)) {
+                            mPreviousBackgroundAppList.removeIf(
+                                processIndexRecord ->
+                                    Objects.equals(processIndexRecord.app, app)
+                            );
+                            mProcessRecordMap.remove(app);
+                        }
+                    }
+                }
+            }
+        );
+
+        hook(applyOomAdjLSPMethod,
+            new IHook() {
+                @Override
+                public void before() {
+                    Object app = getArg(0);
+                    if (app == null) return;
+
+                    ApplyAdjOpt.ProcessRecord pr = new ApplyAdjOpt.ProcessRecord(app);
+                    boolean forkExtensionsEnabled = ForkFeatureGate.isEnabled();
+                    boolean isRestricted = forkExtensionsEnabled && pr.packageName != null
+                        && BackgroundRestrictOpt.isRestricted(pr.packageName);
+
+                    if (isRestricted) {
+                        // Never replace framework importance with cached ADJ while foreground,
+                        // visible, perceptible or running a foreground service. Exclude restricted
+                        // apps from promotion; preserve the framework's computed ADJ in all cases.
+                        if (BackgroundRestrictOpt.isImmediateKillEnabled()) {
+                            Integer state = null;
+                            Integer adj = null;
+                            try {
+                                Object stateValue = callMethod(pr.mState, getCurProcState);
+                                Object adjValue = callMethod(pr.mState, "getCurAdj");
+                                if (stateValue instanceof Integer) state = (Integer) stateValue;
+                                if (adjValue instanceof Integer) adj = (Integer) adjValue;
+                            } catch (Throwable ignored) { }
+                            if (RestrictionPolicy.canTerminate(state, adj)) {
+                                Object pidValue = getField(app, "mPid");
+                                if (!(pidValue instanceof Integer)) pidValue = getField(app, "pid");
+                                int pid = pidValue instanceof Integer ? (Integer) pidValue : 0;
+                                BackgroundRestrictOpt.terminatePackage(pr.packageName, pid, "immediate_kill_out_screen");
+                            }
+                        }
+                        return;
+                    }
+
+                    updateBackgroundAppList(app);
+
+                    int index = -1;
+                    for (int i = 0; i < mPreviousBackgroundAppList.size(); i++) {
+                        if (Objects.equals(mPreviousBackgroundAppList.get(i).app, app)) {
+                            index = i;
+                        }
+                    }
+                    if (index == -1) return;
+
+                    if (!forkExtensionsEnabled) {
+                        int upstreamAdj = (pr.isMainProcess || pr.isolated || pr.isSdkSandbox)
+                            ? Math.min(MAIN_PROCESS_MIN_ADJ + index, MAIN_PROCESS_MAX_ADJ)
+                            : Math.min(SUB_PROCESS_MIN_ADJ + index, SUB_PROCESS_MAX_ADJ);
+                        pr.setCurAdj(upstreamAdj);
+                        pr.setCurRawAdj(upstreamAdj);
+                        return;
+                    }
+
+                    boolean isPerceptibleTierEnabled = SystemPropTool.getProp("persist.hchen.adj.perceptible.enable", true);
+                    int perceptibleCount = SystemPropTool.getProp("persist.hchen.adj.perceptible.count", 8);
+
+                    boolean isMain = pr.isMainProcess || pr.isolated || pr.isSdkSandbox;
+                    HashSet<String> vipPackages = getVipPackages();
+                    boolean isVip = pr.packageName != null && vipPackages.contains(pr.packageName);
+
+                    int adj;
+                    if (isVip) {
+                        // VIP apps are permanently pinned at ADJ 200 (Total Kill Immunity)
+                        adj = isMain ? PERCEPTIBLE_TIER_MIN_ADJ : PERCEPTIBLE_SUB_MIN_ADJ;
+                    } else if (isPerceptibleTierEnabled && index < perceptibleCount) {
+                        if (isMain) {
+                            adj = Math.min(PERCEPTIBLE_TIER_MIN_ADJ + (index * 5), PERCEPTIBLE_TIER_MAX_ADJ);
+                        } else {
+                            adj = Math.min(PERCEPTIBLE_SUB_MIN_ADJ + (index * 5), PERCEPTIBLE_SUB_MAX_ADJ);
+                        }
+                    } else {
+                        int offset = isPerceptibleTierEnabled ? (index - perceptibleCount) : index;
+                        if (offset < 0) offset = 0;
+                        if (isMain) {
+                            adj = Math.min(SERVICE_TIER_MIN_ADJ + offset, MAIN_PROCESS_MAX_ADJ);
+                        } else {
+                            adj = Math.min(SUB_PROCESS_MIN_ADJ + offset, SUB_PROCESS_MAX_ADJ);
+                        }
+                    }
+                    pr.setCurAdj(adj);
+                    pr.setCurRawAdj(adj);
+                }
+            }
+        );
+    }
+
+    private static long lastVipCheckTime = 0;
+    public static final String VIP_FILE_PATH_DE = "/data/user_de/0/com.hchen.appretention/files/vip_packages.txt";
+    public static final String VIP_FILE_PATH_CE = "/data/user/0/com.hchen.appretention/files/vip_packages.txt";
+
+    private static HashSet<String> cachedVipSet = new HashSet<>();
+
+    private static synchronized HashSet<String> getVipPackages() {
+        long now = System.currentTimeMillis();
+        if (now - lastVipCheckTime > 2000) {
+            lastVipCheckTime = now;
+            HashSet<String> vipSet = new HashSet<>();
+
+            // 1. Read from shared configuration files (no length limits)
+            java.io.File[] candidateFiles = new java.io.File[]{
+                new java.io.File(VIP_FILE_PATH_DE),
+                new java.io.File(VIP_FILE_PATH_CE)
+            };
+            for (java.io.File f : candidateFiles) {
+                if (f.exists() && f.canRead()) {
+                    try (java.io.BufferedReader reader = new java.io.BufferedReader(new java.io.FileReader(f))) {
+                        String line;
+                        while ((line = reader.readLine()) != null) {
+                            String trimmed = line.trim();
+                            if (!trimmed.isEmpty()) vipSet.add(trimmed);
+                        }
+                    } catch (Throwable ignored) {}
+                }
+            }
+
+            // 2. Read from system property
+            try {
+                String propVip = SystemPropTool.getProp("persist.hchen.adj.vip_packages", "");
+                if (!propVip.isEmpty()) {
+                    for (String p : propVip.split(",")) {
+                        String trimmed = p.trim();
+                        if (!trimmed.isEmpty()) vipSet.add(trimmed);
+                    }
+                }
+            } catch (Throwable ignored) {}
+
+            cachedVipSet = vipSet;
+        }
+        return cachedVipSet;
+    }
+
+    private static boolean isEnabled() {
+        return SystemPropTool.getProp("persist.hchen.adj.opt.enable", true);
+    }
+
+    private static void updateBackgroundAppList(Object app) {
+        if (mService == null || mProcessList == null) return;
+        if (app == null) return;
+
+        synchronized (mService) {
+            ApplicationInfo info = (ApplicationInfo) getField(app, SystemField.info);
+            if (info == null) return;
+
+            // Bỏ qua cho những app bị giới hạn nền và chính AppRetention (không bao giờ boost chạy ngầm)
+            if (ForkFeatureGate.isEnabled() && (BackgroundRestrictOpt.isRestricted(info.packageName)
+                || BackgroundRestrictOpt.PACKAGE_APPRETENTION.equals(info.packageName))) {
+                if (mProcessRecordMap.contains(app)) {
+                    mPreviousBackgroundAppList.removeIf(
+                        processIndexRecord -> Objects.equals(processIndexRecord.app, app)
+                    );
+                    mProcessRecordMap.remove(app);
+                }
+                return;
+            }
+
+            if (mUserAppMap.contains(info.packageName) || !isSystemApp(info)) {
+                mUserAppMap.add(info.packageName);
+
+                // long time = timeConsumption(() -> {
+                Object mState = getField(app, SystemField.mState);
+                Integer importance = (Integer) callStaticMethod(
+                    ActivityManager$RunningAppProcessInfo,
+                    procStateToImportance,
+                    callMethod(mState, getCurProcState)
+                );
+                if (importance != null) {
+                    if (importance > ImportanceInfo.IMPORTANCE_VISIBLE) { // 假定为后台
+                        ArrayList<?> lruProcesses = (ArrayList<?>) callMethod(mProcessList, getLruProcessesLOSP);
+                        if (lruProcesses == null) return;
+
+                        int nowIndex = lruProcesses.indexOf(app);
+                        if (nowIndex == -1) return;
+
+                        if (mPreviousBackgroundAppList.isEmpty())
+                            mPreviousBackgroundAppList.add(new ProcessIndexRecord(app, nowIndex));
+                        else {
+                            if (mProcessRecordMap.contains(app)) {
+                                mPreviousBackgroundAppList.removeIf(
+                                    processIndexRecord ->
+                                        Objects.equals(processIndexRecord.app, app)
+                                );
+                            }
+                            mPreviousBackgroundAppList.add(new ProcessIndexRecord(app, nowIndex));
+                            mPreviousBackgroundAppList.sort((o1, o2) -> {
+                                // nowIndex 越大说明越重要，所以 nowIndex 越大越排在前面。
+                                if (o1.index > o2.index)
+                                    return -1;
+                                else if (o1.index < o2.index)
+                                    return 1;
+
+                                return 0;
+                            });
+                        }
+                        mProcessRecordMap.add(app);
+                    } else {
+                        if (mProcessRecordMap.contains(app)) {
+                            mPreviousBackgroundAppList.removeIf(
+                                processIndexRecord ->
+                                    Objects.equals(processIndexRecord.app, app)
+                            );
+                            mProcessRecordMap.remove(app);
+                        }
+                    }
+                }
+                // });
+                // AndroidLog.logD(TAG, "update list=" + mPreviousBackgroundAppList + ", time=" + time);
+            }
+        }
+    }
+
+    private static void hookSystemReady() {
+        hookMethod(ActivityManagerService,
+            systemReady,
+            Runnable.class, TimingsTraceAndSlog,
+            new IHook() {
+                @Override
+                public void after() {
+                    Context context = (Context) getThisField(mContext);
+                    if (context == null) return;
+                    try {
+                        PackageManager pm = context.getPackageManager();
+                        if (pm == null) return;
+                        PackageInfo shellInfo = pm.getPackageInfo("com.android.shell", PackageManager.GET_SIGNING_CERTIFICATES);
+                        SigningInfo shellSigning = shellInfo.signingInfo;
+                        Signature[] shellSignature = shellSigning.getApkContentsSigners();
+
+                        @SuppressLint("QueryPermissionsNeeded") List<PackageInfo> packageInfos = pm.getInstalledPackages(PackageManager.GET_SIGNING_CERTIFICATES);
+                        for (PackageInfo packageInfo : packageInfos) {
+                            SigningInfo signingInfo = packageInfo.signingInfo;
+                            if (signingInfo == null) continue;
+
+                            Signature[] signatures = signingInfo.getApkContentsSigners();
+                            if (shellSignature != null && shellSignature.length > 0 && signatures != null && signatures.length > 0) {
+                                if (shellSignature[0].toCharsString().equals(signatures[0].toCharsString())) {
+                                    mSystemSigningAppMap.add(packageInfo.packageName);
+                                    // AndroidLog.logD(TAG, "system signing: " + packageInfo.packageName);
+                                }
+                            }
+                        }
+                    } catch (PackageManager.NameNotFoundException e) {
+                        XposedLog.logE(TAG, e);
+                    }
+                }
+            }
+        );
+    }
+
+    private static boolean isSystemApp(ApplicationInfo info) {
+        if (Objects.isNull(info))
+            return true;
+
+        // if (Objects.equals(info.packageName, "com.google.android.webview"))
+        //     return false;
+        if (info.uid < 10000)
+            return true;
+        if ((info.flags & (ApplicationInfo.FLAG_SYSTEM | ApplicationInfo.FLAG_UPDATED_SYSTEM_APP)) != 0)
+            return true;
+        if (mSystemSigningAppMap.isEmpty()) return false;
+        return mSystemSigningAppMap.contains(info.packageName);
+    }
+
+    private record ProcessIndexRecord(Object app, int index) {
+        @NonNull
+        @Override
+        public String toString() {
+            return "ProcessIndexRecord{" +
+                "app=" + app +
+                ", index=" + index +
+                '}';
+        }
+    }
+
+    /**
+     * @noinspection FieldCanBeLocal
+     */
+    private static class ProcessRecord {
+        private final Object instance;
+        private final ApplicationInfo info;
+        private final String processName;
+        private String packageName;
+        private final boolean isolated;
+        private final boolean isSdkSandbox;
+        private final boolean isMainProcess;
+        private final int uid;
+        private final Object mState;
+
+        private ProcessRecord(Object pr) {
+            this.instance = pr;
+            this.processName = (String) getField(pr, SystemField.processName);
+            this.info = (ApplicationInfo) getField(pr, SystemField.info);
+            if (info != null)
+                this.packageName = info.packageName;
+
+            Object uidObj = getField(pr, SystemField.uid);
+            this.uid = (uidObj instanceof Integer) ? (Integer) uidObj : -1;
+            Object isoObj = getField(pr, SystemField.isolated);
+            this.isolated = (isoObj instanceof Boolean) ? (Boolean) isoObj : false;
+            Object sbObj = getField(pr, SystemField.isSdkSandbox);
+            this.isSdkSandbox = (sbObj instanceof Boolean) ? (Boolean) sbObj : false;
+            this.isMainProcess = Objects.equals(this.processName, this.packageName);
+            this.mState = getField(pr, SystemField.mState);
+        }
+
+        private void setCurRawAdj(int adj) {
+            callMethod(mState, setCurRawAdj, adj);
+        }
+
+        private void setCurAdj(int adj) {
+            callMethod(mState, setCurAdj, adj);
+        }
+    }
+
+    private static class ImportanceInfo {
+        public static final int IMPORTANCE_BACKGROUND = 400;
+        public static final int IMPORTANCE_CACHED = 400;
+        public static final int IMPORTANCE_CANT_SAVE_STATE = 350;
+        public static final int IMPORTANCE_CANT_SAVE_STATE_PRE_26 = 170;
+        public static final int IMPORTANCE_EMPTY = 500;
+        public static final int IMPORTANCE_FOREGROUND = 100;
+        public static final int IMPORTANCE_FOREGROUND_SERVICE = 125;
+        public static final int IMPORTANCE_GONE = 1000;
+        public static final int IMPORTANCE_PERCEPTIBLE = 230;
+        public static final int IMPORTANCE_PERCEPTIBLE_PRE_26 = 130;
+        public static final int IMPORTANCE_SERVICE = 300;
+        public static final int IMPORTANCE_TOP_SLEEPING = 325;
+        public static final int IMPORTANCE_TOP_SLEEPING_PRE_28 = 150;
+        public static final int IMPORTANCE_VISIBLE = 200;
+    }
+}

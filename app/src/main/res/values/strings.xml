@@ -1,4 +1,223 @@
+<?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">AppRetention</string>
-    <string name="app_more">Improved application retention capability. \nby:焕晨HChen</string>
+    <string name="app_name">AppRetentionFork</string>
+    <string name="app_more">Improved application retention capability.
+by: HChenX &amp; KhanhNguyen9872</string>
+
+    <!-- System Status Card -->
+    <string name="title_system_framework">System Framework</string>
+    <string name="badge_status_active">Hooks unverified</string>
+    <string name="status_root_detecting">Scope: android (system_server) • Root: Detecting...</string>
+    <string name="status_root_requesting">Scope: android (system_server) • Root: Requesting superuser...</string>
+    <string name="status_root_active">Scope: android (system_server) • Root: Active (KernelSU/Magisk/APatch)</string>
+    <string name="status_root_limited">Scope: android (system_server) • Root: Not Granted (Limited Mode)</string>
+    <string name="status_killshield_active">KillShield: setting ON; hooks unverified</string>
+    <string name="status_fork_extensions_disabled">Safe baseline: fork-only system hooks disabled</string>
+    <string name="toast_root_active">Root: Active with full Kernel &amp; System access</string>
+
+    <!-- Hardware Monitor Card -->
+    <string name="title_hardware_monitor">Hardware Monitor</string>
+    <string name="label_auto_refresh">Auto: 5s</string>
+    <string name="label_ram_memory">RAM Memory</string>
+    <string name="format_ram_details">%1$.1f GB / %2$.1f GB (%3$d%%)</string>
+    <string name="format_ram_subtext">Available: %1$.1f GB • LMKD: %2$dx • %3$s</string>
+    <string name="format_ram_subtext_notype">Available: %1$.1f GB • LMKD: %2$dx</string>
+    <string name="label_cpu_processor">CPU Processor</string>
+    <string name="format_cpu_details">%d%% Load</string>
+    <string name="format_cpu_subtext">%1$s • %2$d Cores</string>
+    <string name="format_cpu_subtext_nocores">%s</string>
+    <string name="format_cpu_root_required">%1$s • %2$d Cores</string>
+    <string name="format_cpu_identity">CPU ID: %1$s • ABI: %2$s</string>
+    <string name="format_cpu_topology">Clusters: %s</string>
+    <string name="label_internal_storage">Internal Storage</string>
+    <string name="format_storage_details">%1$.1f GiB / %2$.1f GiB (%3$d%%)</string>
+    <string name="format_storage_subtext">Free: %.1f GiB</string>
+    <string name="format_storage_subtext_type">Free: %1$.1f GiB • %2$s</string>
+    <string name="format_storage_subtext_physical">Free: %1$.1f GiB • Physical: %2$.0f GB</string>
+    <string name="format_storage_subtext_physical_type">Free: %1$.1f GiB • Physical: %2$.0f GB • %3$s</string>
+
+    <!-- Keep-Alive List Card -->
+    <string name="title_keep_alive_list">Keep-Alive List</string>
+    <string name="desc_keep_alive_list">Requests stronger background retention for selected apps. Crashes, force-stop and low-memory kills can still occur.</string>
+    <string name="format_keep_alive_summary">Keep-Alive: %d apps</string>
+    <string name="btn_select_keep_alive_apps">Select Keep-Alive Apps</string>
+    <string name="toast_saved_keep_alive_apps">Saved %d Keep-Alive apps</string>
+
+    <!-- Retention Controls Card -->
+    <string name="title_retention_controls">Retention Controls</string>
+    <string name="title_fork_extensions">Enable fork system extensions</string>
+    <string name="desc_fork_extensions">Master safety gate for fork-only hooks. Disabled keeps upstream behavior. A reboot is required after changing this setting.</string>
+    <string name="toast_reboot_required">Setting verified. Reboot to apply hook registration changes.</string>
+    <string name="toast_setting_write_failed">Could not verify the system setting. The previous value was restored.</string>
+    <string name="toast_setting_save_failed">Could not save the selection.</string>
+    <string name="toast_setting_sync_deferred">Selection saved. System synchronization will retry next launch.</string>
+    <string name="toast_appretention_restriction_locked">AppRetention is always Restricted and cannot be assigned Keep Alive.</string>
+    <string name="title_tiered_adj">Tiered Retention Clamping</string>
+    <string name="desc_tiered_adj">Bumps top background apps to Perceptible tier (ADJ 200-245) for persistent background retention.</string>
+    <string name="title_killshield">KillShield Protection</string>
+    <string name="desc_killshield">Blocks automated system kills from timeout, cpu spikes, and idle sweeps while allowing manual swipe.</string>
+    <string name="title_doze">Doze Mode Auto-Exemption</string>
+    <string name="desc_doze">Answers compatible Doze whitelist checks for eligible apps; restricted apps are excluded. Other idle policies may still apply.</string>
+    <string name="title_nubia">RedMagic / Nubia Killer Shield</string>
+    <string name="desc_nubia">Suppresses NeoPower, SmartEngine, and GameSpace background memory purgers on RedMagic devices.</string>
+    <string name="title_hibernation">Disable App Hibernation</string>
+    <string name="desc_hibernation">Prevents compatible hibernation requests for eligible apps. Permission auto-reset is separate.</string>
+    <string name="title_autostart">Bypass OEM Auto-Start Restrictions</string>
+    <string name="desc_autostart">Bypasses compatible boolean OEM startup checks for eligible apps; availability depends on the ROM.</string>
+
+    <!-- Active Background Processes Card -->
+    <string name="title_active_processes">Active Background Processes</string>
+    <string name="format_process_count">%d apps</string>
+    <string name="status_root_not_granted_scanning">Root: Not Granted (Limited Scanning)</string>
+
+    <!-- Retention Log Card -->
+    <string name="title_retention_log">Retention Log</string>
+    <string name="btn_clear_log">Clear</string>
+    <string name="placeholder_log">Log will appear here as retention events occur...</string>
+
+    <!-- Root Permission Explanation Dialog -->
+    <string name="dialog_root_title">Root Permission Not Granted</string>
+    <string name="dialog_root_message">Hook activation is not inferred from root access. Enable this module in a compatible Xposed framework and select System Framework.\n\nRoot is needed for system logcat, process metrics and property synchronization. Grant root, then refresh status to request current hook registration counts.</string>
+    <string name="btn_dialog_retry_root">Retry / Grant</string>
+    <string name="btn_dialog_continue_limited">Continue (Limited Mode)</string>
+
+    <!-- Keep-Alive Selection Dialog -->
+    <string name="dialog_keep_alive_title">Keep-Alive List</string>
+    <string name="dialog_keep_alive_subtitle">Selected apps receive a background retention policy, not total kill immunity.</string>
+    <string name="hint_search_apps">Search application...</string>
+    <string name="btn_cancel">Cancel</string>
+    <string name="btn_save">Save</string>
+    <!-- Process Actions -->
+    <string name="btn_kill_process">Kill</string>
+    <string name="toast_killed_process">Kill/force-stop command accepted for %s</string>
+    <string name="format_process_pid">PID: %1$d - %2$s</string>
+    <!-- Navigation Tabs -->
+    <string name="nav_dashboard">Dashboard</string>
+    <string name="nav_keep_alive">Keep-Alive</string>
+    <string name="nav_controls">Controls</string>
+    <string name="nav_logs">Logs</string>
+
+    <!-- Keep-Alive Dedicated Page -->
+    <string name="tab_keep_alive_title">Keep-Alive List</string>
+    <string name="tab_keep_alive_desc">Apps with a requested background retention policy.</string>
+    <string name="chip_all_apps">All Apps (%d)</string>
+    <string name="chip_keep_alive_only">Keep-Alive (%d)</string>
+    <string name="badge_keep_alive_locked">KEEP-ALIVE</string>
+    <string name="toast_keep_alive_added">Pinned %s to Keep-Alive</string>
+    <string name="toast_keep_alive_removed">Unpinned %s from Keep-Alive</string>
+
+    <!-- Controls & Logs Pages -->
+    <string name="desc_controls_header">Configure System Framework &amp; OEM killer bypass shields.</string>
+    <string name="title_logs_header">Real-Time System Hook Logs</string>
+    <string name="btn_copy_log">Copy</string>
+    <string name="toast_log_copied">Logs copied to clipboard</string>
+    <string name="toast_log_cleared">Module log view cleared; other apps\' logs unchanged</string>
+    <string name="nav_settings">Settings</string>
+    <string name="title_settings">System &amp; Retention Settings</string>
+    <string name="desc_settings">Configure background hooks, retention engines, and process restriction policies</string>
+    <string name="title_immediate_kill">Immediate Kill on App Exit</string>
+    <string name="desc_immediate_kill">Immediately terminate restricted apps upon leaving to home screen or screen off (no need to wait for recents swipe-out)</string>
+    <string name="mode_keep_alive">Keep-Alive</string>
+    <string name="mode_restricted">Restricted</string>
+    <string name="chip_restricted_only">Restricted (%d)</string>
+    <string name="badge_restricted">RESTRICTED</string>
+    <string name="toast_restricted_added">Added %s to Background Restriction</string>
+    <string name="toast_restricted_removed">Removed %s from Background Restriction</string>
+    <string name="summary_restricted_desc">Apps in this list will be terminated immediately when swiped out from Recents.</string>
+    <string name="format_restricted_summary">%d apps restricted</string>
+
+    <!-- System App Restriction Warning & Hints -->
+    <string name="dialog_system_app_restrict_title">System App Warning</string>
+    <string name="dialog_system_app_restrict_message">Restricting background execution for system application \"%s\" may cause system instability, missing push notifications, or abnormal service behavior.\n\nAre you sure you want to restrict this app?</string>
+    <string name="btn_yes_continue">Yes, Restrict</string>
+    <string name="btn_no_cancel">Cancel</string>
+    <string name="toast_app_is_restricted_hint">\"%s\" is currently restricted. Unrestrict it in the Restricted tab first to enable Keep-Alive.</string>
+    <string name="badge_restricted_short">RESTRICTED</string>
+
+    <!-- Pro Suite Strings -->
+    <string name="section_retention_engine">Retention Engine &amp; Optimizations</string>
+    <string name="section_retention_desc">Advanced system framework hooks for memory retention and killer bypass</string>
+    <string name="section_restriction_engine">Background Restriction Policies</string>
+    <string name="section_restriction_desc">Prevent background execution, auto-restart, and wakelocks for restricted apps</string>
+    <string name="chip_filter_user">User Apps</string>
+    <string name="chip_filter_system">System</string>
+    <string name="dialog_quick_switch_title">Switch to Keep-Alive?</string>
+    <string name="dialog_quick_switch_message">Application \"%s\" is currently restricted from background. Would you like to unrestrict it and pin it to Keep-Alive now?</string>
+    <string name="btn_quick_switch_confirm">Unrestrict &amp; Pin</string>
+    <string name="badge_proc_keep_alive">KEEP-ALIVE</string>
+    <string name="badge_proc_restricted">RESTRICTED</string>
+
+
+    <string name="desc_logs_header">Real-time daemon events, hooks, &amp; retention activities.</string>
+    <string name="btn_save_log">Save Log</string>
+    <string name="btn_refresh_log">Refresh</string>
+    <string name="toast_log_saved">Logs saved to: %s</string>
+    <string name="toast_log_empty">No logs available to save</string>
+    <string name="title_share_log">Share AppRetention Logs</string>
+
+    <!-- Process Details Sheet -->
+    <string name="sheet_title_process_details">Process Details</string>
+    <string name="sheet_metrics_title">DIAGNOSTICS &amp; METRICS</string>
+    <string name="sheet_policy_title">RETENTION &amp; RESTRICTION POLICIES</string>
+    <string name="sheet_sw_keep_alive_title">Keep-Alive</string>
+    <string name="sheet_sw_keep_alive_desc">Lock app to prevent system from killing on low memory.</string>
+    <string name="sheet_sw_restrict_title">Restrict Background</string>
+    <string name="sheet_sw_restrict_desc">Prevent background execution, terminating on app exit or memory pressure.</string>
+    <string name="sheet_btn_kill">Kill Process</string>
+    <string name="sheet_btn_force_stop">Force Stop</string>
+    <string name="sheet_btn_open_app">Open App</string>
+    <string name="sheet_btn_app_info">App Info</string>
+    <string name="sheet_type_system">SYSTEM</string>
+    <string name="sheet_type_user">USER</string>
+    <string name="sheet_label_pid">PID</string>
+    <string name="sheet_label_uid">UID</string>
+    <string name="sheet_label_ram">RAM</string>
+    <string name="sheet_label_adj">OOM ADJ</string>
+    <string name="sheet_status_vip">Keep Alive requested (see measured ADJ)</string>
+    <string name="sheet_status_restricted">Restricted (Clean on exit / low RAM)</string>
+    <string name="sheet_status_foreground">Foreground / Active on Screen</string>
+    <string name="sheet_status_perceptible">Perceptible / Media / Notification</string>
+    <string name="sheet_status_service">Background Service</string>
+    <string name="sheet_status_cached">Cached Process (Low Priority)</string>
+    <string name="toast_force_stop_success">Force-stop command accepted for %s</string>
+    <string name="toast_copied_to_clipboard">Copied %s to clipboard</string>
+
+    <string name="loading_processes">Scanning running processes...</string>
+    <string name="label_gpu_display">GPU &amp; Display</string>
+    <string name="label_battery_power">Battery &amp; Thermal</string>
+    <string name="label_device_platform">Device &amp; Platform</string>
+    <string name="loading_hardware_identity">Checking device identity...</string>
+    <string name="format_device_platform">%1$s\n%2$s</string>
+    <string name="format_gpu_vendor">Vendor: %s</string>
+    <string name="format_gpu_driver">Driver: %s</string>
+    <string name="format_battery_details">%1$d%% • %2$.1f°C</string>
+    <string name="format_battery_details_notemp">%d%%</string>
+    <string name="format_battery_subtext">%1$s • %2$s • %3$s</string>
+    <string name="battery_status_charging">Charging</string>
+    <string name="battery_status_discharging">Discharging</string>
+    <string name="battery_status_full">Full</string>
+    <string name="battery_health_good">Good</string>
+    <string name="battery_health_overheat">Overheat</string>
+    <string name="battery_health_cold">Cold</string>
+    <string name="battery_health_dead">Dead</string>
+    <string name="format_battery_mah_details">%1$d / %2$d mAh (%3$d%%) • %4$.1f°C</string>
+    <string name="format_battery_mah_notemp">%1$d / %2$d mAh (%3$d%%)</string>
+    <string name="format_battery_rate_charging">%1$s (+%2$d mA)</string>
+    <string name="format_battery_rate_discharging">%1$s (-%2$d mA)</string>
+
+    <string name="format_gpu_details_load">%d%%</string>
+    <string name="format_gpu_details_load_clock">%1$d%% • %2$d MHz</string>
+    <string name="format_gpu_details_clock">%d MHz</string>
+
+    <string name="title_fcm_fix">Fix FCM</string>
+    <string name="desc_fcm_fix">Default ON. Requests a Google Play services heartbeat about every 5 minutes to help recover stale push connections. Best effort; not a guarantee of instant delivery. Runs in the system hook for the primary user, without keeping this app open.</string>
+    <string name="badge_hooks_registered">%d hook registrations; effects unverified</string>
+    <string name="status_killshield_off">KillShield: OFF</string>
+    <string name="status_killshield_unverified">KillShield: setting ON; hook registration unverified</string>
+    <string name="status_killshield_unavailable">KillShield: no compatible hooks registered</string>
+    <string name="status_killshield_registered">KillShield: ON; %d hooks registered (effects unverified)</string>
+    <string name="status_killshield_pending">KillShield: saved setting differs from system; synchronization pending</string>
+    <string name="logs_no_records">No new module records. Enable the module in System Framework and reboot after installing this update. Root is required to read system-process logcat.</string>
+    <string name="logs_clear_incomplete">Log view cleared; some module files could not be truncated. Grant root and retry.</string>
+    <string name="toast_process_action_failed">Process command failed or root is unavailable; refresh to check the process.</string>
 </resources>
