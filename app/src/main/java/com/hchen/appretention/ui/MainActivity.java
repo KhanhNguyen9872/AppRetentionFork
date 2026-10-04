@@ -21,6 +21,10 @@ import android.app.ActivityManager;
 import android.content.ClipData;
 import android.content.ClipboardManager;
 import android.content.Context;
+import android.content.BroadcastReceiver;
+import android.content.IntentFilter;
+import android.os.Build;
+import com.hchen.appretention.hook.system.opt.HookStatus;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.ApplicationInfo;
@@ -95,6 +99,28 @@ public class MainActivity extends AppCompatActivity {
     private static final ExecutorService sWorkerPool = Executors.newFixedThreadPool(2);
 
     private SharedPreferences prefs;
+    private static final String KEY_LOG_CLEAR_TIME = "logs.clear_time";
+    private int killShieldHookCount = -1;
+    private int registeredHookCount = -1;
+    private boolean hookStatusReceiverRegistered;
+    private String hookStatusNonce;
+    private final Handler hookStatusHandler = new Handler(Looper.getMainLooper());
+    private final BroadcastReceiver hookStatusReceiver = new BroadcastReceiver() {
+        @Override public void onReceive(Context context, Intent intent) {
+            if (!HookStatus.RESPONSE.equals(intent.getAction()) || hookStatusNonce == null
+                || !hookStatusNonce.equals(intent.getStringExtra("nonce"))
+                || intent.getIntExtra("version", -1) != BuildConfig.VERSION_CODE) return;
+            registeredHookCount = intent.getIntExtra("count", 0);
+            killShieldHookCount = intent.getIntExtra("killshield", 0);
+            hookStatusNonce = null;
+            hookStatusHandler.removeCallbacksAndMessages(null);
+            if (tvStatusBadge != null) {
+                tvStatusBadge.setText(getString(R.string.badge_hooks_registered, registeredHookCount));
+                tvStatusBadge.setBackgroundResource(registeredHookCount > 0 ? R.drawable.bg_badge_green : R.drawable.bg_badge_amber);
+            }
+            refreshShieldStatus();
+        }
+    };
 
     // Navigation & Page Containers
     private BottomNavigationView bottomNavigation;
@@ -245,6 +271,7 @@ public class MainActivity extends AppCompatActivity {
         initViews();
         setupNavigation();
         setupSwitches();
+        registerHookStatusReceiver();
         checkAndPromptRoot();
 
         // AppRetention is a mandatory restricted package: never boost or keep its UI alive.
@@ -285,6 +312,8 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onDestroy() {
         super.onDestroy();
+        hookStatusHandler.removeCallbacksAndMessages(null);
+        if (hookStatusReceiverRegistered) unregisterReceiver(hookStatusReceiver);
         mTimerHandler.removeCallbacksAndMessages(null);
         if (isFinishing()) {
             android.os.Process.killProcess(android.os.Process.myPid());
@@ -331,6 +360,7 @@ public class MainActivity extends AppCompatActivity {
             swipeRefreshDashboard.setOnRefreshListener(() -> {
                 updateHardwareStats();
                 refreshRunningProcesses();
+                requestHookStatus();
                 swipeRefreshDashboard.postDelayed(() -> {
                     if (swipeRefreshDashboard != null && swipeRefreshDashboard.isRefreshing()) {
                         swipeRefreshDashboard.setRefreshing(false);
@@ -347,6 +377,7 @@ public class MainActivity extends AppCompatActivity {
                 if (!RootTool.isRootAvailable()) {
                     checkAndPromptRoot();
                 } else {
+                    requestHookStatus();
                     Toast.makeText(this, R.string.toast_root_active, Toast.LENGTH_SHORT).show();
                 }
             });
@@ -619,12 +650,16 @@ public class MainActivity extends AppCompatActivity {
         if (sw == null) return;
         String propertyValue = SystemPropTool.getProp(key, "");
         boolean hasSavedChoice = prefs.contains(key);
-        boolean propertyChoice = propertyValue.isEmpty() ? defValue : Boolean.parseBoolean(propertyValue);
+        boolean propertyChoice = propertyValue.isEmpty() ? defValue : SystemPropTool.getProp(key, defValue);
         // Once the user has made a choice, app storage is authoritative. This prevents a
         // missing or stale vendor property from turning a switch back on after reboot.
         boolean val = hasSavedChoice ? prefs.getBoolean(key, defValue) : propertyChoice;
         prefs.edit().putBoolean(key, val).commit();
         sw.setChecked(val);
+        if (Build.VERSION.SDK_INT < 31 && !KEY_FCM_FIX.equals(key)) {
+            sw.setEnabled(false); // AndroidDef has no matching fork-feature initialization.
+            return;
+        }
         // Seed or repair the persistent property without treating restoration as a new click.
         if (propertyValue.isEmpty() || propertyChoice != val) {
             RootTool.setBooleanPropVerified(key, val, success -> notifyFcmConfigChanged(key, success));
@@ -655,6 +690,8 @@ public class MainActivity extends AppCompatActivity {
                         Toast.makeText(this, R.string.toast_setting_sync_deferred, Toast.LENGTH_LONG).show();
                     }
                     sw.setEnabled(true);
+                    refreshShieldStatus();
+                    requestHookStatus();
                 });
             });
         });
@@ -695,8 +732,51 @@ public class MainActivity extends AppCompatActivity {
                 }
                 updateHardwareStats();
                 refreshRunningProcesses();
+                requestHookStatus();
             });
         });
+    }
+
+    @android.annotation.SuppressLint("UnspecifiedRegisterReceiverFlag") // Explicit flags on Android 13+.
+    private void registerHookStatusReceiver() {
+        if (Build.VERSION.SDK_INT >= 33) registerReceiver(hookStatusReceiver,
+            new IntentFilter(HookStatus.RESPONSE), "android.permission.DUMP", null, Context.RECEIVER_EXPORTED);
+        else registerReceiver(hookStatusReceiver, new IntentFilter(HookStatus.RESPONSE), "android.permission.DUMP", null);
+        hookStatusReceiverRegistered = true;
+    }
+
+    private void requestHookStatus() {
+        // Nonces bind a fresh response to this screen, not a previous boot or module build.
+        if (!hookStatusReceiverRegistered || hookStatusNonce != null) return;
+        String nonce = java.util.UUID.randomUUID().toString();
+        hookStatusNonce = nonce;
+        registeredHookCount = -1;
+        killShieldHookCount = -1;
+        if (tvStatusBadge != null) tvStatusBadge.setText(R.string.badge_status_active);
+        refreshShieldStatus();
+        hookStatusHandler.postDelayed(() -> {
+            if (nonce.equals(hookStatusNonce)) {
+                hookStatusNonce = null;
+                if (tvStatusBadge != null) tvStatusBadge.setBackgroundResource(R.drawable.bg_badge_amber);
+                refreshShieldStatus();
+            }
+        }, 10000);
+        sWorkerPool.execute(() -> {
+            if (!RootTool.hasRoot()) return;
+            RootTool.runCommandResult("am broadcast --user 0 -a " + HookStatus.REQUEST
+                + " -p android --es nonce " + nonce);
+        });
+    }
+
+    private void refreshShieldStatus() {
+        if (tvShieldStatus == null || prefs == null) return;
+        boolean intended = prefs.getBoolean(KEY_KILL_SHIELD, true);
+        boolean actual = SystemPropTool.getProp(KEY_KILL_SHIELD, true);
+        if (intended != actual) tvShieldStatus.setText(R.string.status_killshield_pending);
+        else if (!actual) tvShieldStatus.setText(R.string.status_killshield_off);
+        else if (killShieldHookCount < 0) tvShieldStatus.setText(R.string.status_killshield_unverified);
+        else if (killShieldHookCount == 0) tvShieldStatus.setText(R.string.status_killshield_unavailable);
+        else tvShieldStatus.setText(getString(R.string.status_killshield_registered, killShieldHookCount));
     }
 
     private void showRootExplanationDialog() {
@@ -869,7 +949,7 @@ public class MainActivity extends AppCompatActivity {
             if (vips.contains(basePkg)) {
                 tvStatusDesc.setText(getString(R.string.sheet_status_vip));
                 tvStatusDesc.setTextColor(0xFF22C55E);
-                tvAdj.setText("200");
+                tvAdj.setText(String.valueOf(item.adj)); // Measured ADJ, not the requested VIP tier.
                 tvAdj.setTextColor(0xFF22C55E);
             } else if (restricted.contains(basePkg)) {
                 tvStatusDesc.setText(getString(R.string.sheet_status_restricted));
@@ -972,26 +1052,31 @@ public class MainActivity extends AppCompatActivity {
         MaterialButton btnAppInfo = view.findViewById(R.id.btnDetailAppInfo);
 
         btnKill.setOnClickListener(v -> {
-            RootTool.killProcess(item.pid, item.packageName);
-            try {
-                ActivityManager am = (ActivityManager) getSystemService(Context.ACTIVITY_SERVICE);
-                if (am != null) am.killBackgroundProcesses(basePkg);
-            } catch (Throwable ignored) {}
-            Toast.makeText(this, getString(R.string.toast_killed_process, item.appName), Toast.LENGTH_SHORT).show();
-            sheet.dismiss();
-            mTimerHandler.postDelayed(this::refreshRunningProcesses, 500);
+            btnKill.setEnabled(false);
+            sWorkerPool.execute(() -> {
+                RootTool.CommandResult command = RootTool.runCommandResult(
+                    "kill -9 " + item.pid + " && am force-stop '" + basePkg + "'");
+                runOnUiThread(() -> {
+                    btnKill.setEnabled(true);
+                    Toast.makeText(this, command.exitCode == 0
+                        ? getString(R.string.toast_killed_process, item.appName)
+                        : getString(R.string.toast_process_action_failed), Toast.LENGTH_LONG).show();
+                    if (command.exitCode == 0) sheet.dismiss();
+                    mTimerHandler.postDelayed(this::refreshRunningProcesses, 500);
+                });
+            });
         });
 
         btnForceStop.setOnClickListener(v -> {
+            btnForceStop.setEnabled(false);
             sWorkerPool.execute(() -> {
-                RootTool.runCommand("am force-stop " + basePkg);
-                try {
-                    ActivityManager am = (ActivityManager) getSystemService(Context.ACTIVITY_SERVICE);
-                    if (am != null) am.killBackgroundProcesses(basePkg);
-                } catch (Throwable ignored) {}
+                RootTool.CommandResult command = RootTool.runCommandResult("am force-stop '" + basePkg + "'");
                 runOnUiThread(() -> {
-                    Toast.makeText(this, getString(R.string.toast_force_stop_success, item.appName), Toast.LENGTH_SHORT).show();
-                    sheet.dismiss();
+                    btnForceStop.setEnabled(true);
+                    Toast.makeText(this, command.exitCode == 0
+                        ? getString(R.string.toast_force_stop_success, item.appName)
+                        : getString(R.string.toast_process_action_failed), Toast.LENGTH_LONG).show();
+                    if (command.exitCode == 0) sheet.dismiss();
                     mTimerHandler.postDelayed(this::refreshRunningProcesses, 500);
                 });
             });
@@ -1407,7 +1492,7 @@ public class MainActivity extends AppCompatActivity {
                 }
 
                 if (tvShieldStatus != null) {
-                    tvShieldStatus.setText(R.string.status_killshield_active);
+                    refreshShieldStatus();
                 }
             });
             } finally {
@@ -1507,8 +1592,6 @@ public class MainActivity extends AppCompatActivity {
             try {
                 if (RootTool.isRootAvailable()) {
                     List<RootTool.ProcessInfo> rootProcs = RootTool.getRunningProcesses();
-                    Set<String> restrictSet = prefs != null ? prefs.getStringSet(KEY_RESTRICT_PACKAGES, Collections.emptySet()) : Collections.emptySet();
-                    boolean immediateKill = prefs != null && prefs.getBoolean(KEY_RESTRICT_IMMEDIATE, false);
 
                     Set<String> launchables = getLaunchablePackages(pm);
                     for (RootTool.ProcessInfo pi : rootProcs) {
@@ -1516,10 +1599,8 @@ public class MainActivity extends AppCompatActivity {
                         if (pkg.contains(":")) {
                             pkg = pkg.substring(0, pkg.indexOf(':'));
                         }
-                        if (immediateKill && restrictSet.contains(pkg) && pi.adj > 0) {
-                            RootTool.killProcess(pi.pid, pkg);
-                            continue;
-                        }
+                        // Monitoring has no destructive side effects. Live lifecycle hooks
+                        // recheck foreground importance and PID ownership before termination.
 
                         AppMeta meta = sMetaCache.get(pkg);
                         if (meta == null) {
@@ -1683,81 +1764,51 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void refreshLogs() {
+        long cutoff = prefs.getLong(KEY_LOG_CLEAR_TIME, 0);
         sWorkerPool.execute(() -> {
             StringBuilder sb = new StringBuilder();
-            boolean hasLogs = false;
-
-            // 1. If root is available, ensure permissions on log files
-            if (RootTool.hasRoot()) {
-                RootTool.runCommand("chmod -R 777 /data/user_de/0/com.hchen.appretention/files/logs 2>/dev/null");
-            }
-
-            // 2. Read from candidate log files
-            File[] candidateDirs = new File[]{
-                    new File("/data/user_de/0/com.hchen.appretention/files/logs"),
-                    new File(getFilesDir(), "logs"),
-                    new File(getExternalFilesDir(null), "logs")
-            };
-
-            for (File logDir : candidateDirs) {
-                if (logDir.exists() && logDir.isDirectory()) {
-                    File[] files = logDir.listFiles();
-                    if (files != null && files.length > 0) {
-                        for (File f : files) {
-                            if (f.isFile() && f.getName().endsWith(".log")) {
-                                try (BufferedReader reader = new BufferedReader(new FileReader(f))) {
-                                    String line;
-                                    boolean fileHasContent = false;
-                                    StringBuilder fileSb = new StringBuilder();
-                                    while ((line = reader.readLine()) != null) {
-                                        fileSb.append(line).append("\n");
-                                        fileHasContent = true;
-                                    }
-                                    if (fileHasContent) {
-                                        sb.append("--- [File: ").append(f.getName()).append("] ---\n");
-                                        sb.append(fileSb);
-                                        hasLogs = true;
-                                    }
-                                } catch (Throwable ignored) {}
-                            }
+            java.util.LinkedHashSet<File> directories = new java.util.LinkedHashSet<>();
+            directories.add(new File("/data/user_de/0/com.hchen.appretention/files/logs"));
+            directories.add(new File(getFilesDir(), "logs"));
+            File external = getExternalFilesDir(null);
+            if (external != null) directories.add(new File(external, "logs"));
+            boolean fileContent = false;
+            for (File directory : directories) {
+                File[] files = directory.listFiles(f -> f.isFile() && f.getName().endsWith(".log"));
+                if (files == null) continue;
+                for (File file : files) {
+                    if (sb.length() >= 1024 * 1024) break;
+                    try (BufferedReader reader = new BufferedReader(new FileReader(file))) {
+                        String line;
+                        boolean header = false;
+                        while (sb.length() < 1024 * 1024 && (line = reader.readLine()) != null) {
+                            if (!header) { sb.append("--- ").append(file.getName()).append(" ---\n"); header = true; }
+                            sb.append(line, 0, Math.min(line.length(), 65536)).append('\n');
+                            fileContent = true;
                         }
+                    } catch (java.io.IOException error) {
+                        sb.append("File read failed: ").append(file.getName()).append(": ").append(error.getMessage()).append('\n');
                     }
                 }
             }
-
-            // Fallback: If root and files were not readable via standard Java, try root cat
-            if (!hasLogs && RootTool.hasRoot()) {
-                String catOut = RootTool.runCommand("cat /data/user_de/0/com.hchen.appretention/files/logs/*.log 2>/dev/null");
-                if (catOut != null && !catOut.trim().isEmpty()) {
-                    sb.append("--- [File Logs (Root)] ---\n").append(catOut).append("\n");
-                    hasLogs = true;
-                }
+            if (!fileContent && RootTool.hasRoot()) {
+                RootTool.CommandResult files = RootTool.runCommandResult(
+                    "for f in /data/user_de/0/com.hchen.appretention/files/logs/*.log; do "
+                    + "[ -f \"$f\" ] || continue; tail -c 262144 \"$f\"; done");
+                if (!files.stdout.trim().isEmpty()) sb.append("--- File logs (root) ---\n").append(files.stdout);
+                if (!files.stderr.trim().isEmpty()) sb.append("File collection: ").append(files.stderr);
             }
-
-            // 3. Always capture real-time system & module logcat
-            String logcatCmd = "logcat -d -v time -s AppRetention:V KillShieldOpt:V ApplyAdjOpt:V BackgroundRestrictOpt:V LogServices:V SaveLog:V ProcessScanner:V LSPosed:V Xposed:V -t 350";
-            String logcatLogs = RootTool.runCommand(logcatCmd);
-            if (logcatLogs != null && !logcatLogs.trim().isEmpty()) {
-                if (hasLogs) {
-                    sb.append("\n========================================\n");
-                    sb.append("=== [REAL-TIME SYSTEM & HOOK LOGCAT] ===\n");
-                    sb.append("========================================\n");
-                }
-                sb.append(logcatLogs.trim());
-                hasLogs = true;
-            }
-
-            final boolean finalHasLogs = hasLogs;
-            final String finalLogContent = sb.toString();
-
+            RootTool.CommandResult logcat = RootTool.runCommandResult(
+                "logcat -d -v epoch -b main -b system -s AppRetention:V -t 350");
+            String records = LogSnapshot.after(logcat.stdout, cutoff);
+            if (!records.trim().isEmpty()) sb.append("--- Module logcat ---\n").append(records);
+            if (logcat.exitCode != 0) sb.append("Logcat collection failed (exit ")
+                .append(logcat.exitCode).append("): ").append(logcat.stderr).append('\n');
+            if (sb.length() == 0) sb.append(getString(R.string.logs_no_records));
+            String result = sb.toString();
             runOnUiThread(() -> {
-                if (tvLogContent != null) {
-                    if (finalHasLogs) {
-                        tvLogContent.setText(finalLogContent);
-                    } else {
-                        tvLogContent.setText(R.string.placeholder_log);
-                    }
-                }
+                // An old refresh cannot resurrect records after the user clears the view.
+                if (tvLogContent != null && cutoff == prefs.getLong(KEY_LOG_CLEAR_TIME, 0)) tvLogContent.setText(result);
             });
         });
     }
@@ -1820,10 +1871,11 @@ public class MainActivity extends AppCompatActivity {
                         writer.write(content);
                         writer.flush();
                     }
-                    RootTool.runCommand("cp " + temp.getAbsolutePath() + " /sdcard/Download/" + fileName + " && chmod 666 /sdcard/Download/" + fileName);
+                    RootTool.CommandResult copy = RootTool.runCommandResult("cp '" + temp.getAbsolutePath()
+                        + "' '/sdcard/Download/" + fileName + "' && test -s '/sdcard/Download/" + fileName + "'");
                     temp.delete();
-                    saved = true;
-                    savedPath = "/sdcard/Download/" + fileName;
+                    saved = copy.exitCode == 0;
+                    if (saved) savedPath = "/sdcard/Download/" + fileName;
                 } catch (Throwable ignored) {}
             }
 
@@ -1863,35 +1915,39 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void clearLogFiles() {
+        if (!prefs.edit().putLong(KEY_LOG_CLEAR_TIME, System.currentTimeMillis()).commit()) {
+            Toast.makeText(this, R.string.toast_setting_save_failed, Toast.LENGTH_LONG).show(); return;
+        }
         sWorkerPool.execute(() -> {
-            File[] candidateDirs = new File[]{
-                    new File("/data/user_de/0/com.hchen.appretention/files/logs"),
-                    new File(getExternalFilesDir(null), "logs"),
-                    new File(getFilesDir(), "logs")
-            };
-            for (File dir : candidateDirs) {
-                if (dir.exists() && dir.isDirectory()) {
-                    File[] files = dir.listFiles();
-                    if (files != null) {
-                        for (File f : files) {
-                            f.delete();
-                        }
+            boolean failed = false;
+            boolean deFailed = false;
+            java.util.LinkedHashSet<File> directories = new java.util.LinkedHashSet<>();
+            directories.add(new File("/data/user_de/0/com.hchen.appretention/files/logs"));
+            directories.add(new File(getFilesDir(), "logs"));
+            File external = getExternalFilesDir(null);
+            if (external != null) directories.add(new File(external, "logs"));
+            for (File directory : directories) {
+                File[] files = directory.listFiles(f -> f.isFile() && f.getName().endsWith(".log"));
+                if (files == null) continue;
+                for (File file : files) {
+                    // O_APPEND writers remain attached to the same inode after truncation.
+                    try { com.hchen.appretention.log.LogFilePolicy.truncate(file); }
+                    catch (java.io.IOException error) {
+                        if (directory.getAbsolutePath().equals("/data/user_de/0/com.hchen.appretention/files/logs")) deFailed = true;
+                        else failed = true;
                     }
                 }
             }
             if (RootTool.hasRoot()) {
-                RootTool.runCommand("rm -rf /data/user_de/0/com.hchen.appretention/files/logs/* 2>/dev/null; logcat -c 2>/dev/null");
-            } else {
-                try {
-                    Runtime.getRuntime().exec("logcat -c");
-                } catch (Throwable ignored) {}
+                RootTool.CommandResult clear = RootTool.runCommandResult(
+                    "for f in /data/user_de/0/com.hchen.appretention/files/logs/*.log; do "
+                    + "[ -f \"$f\" ] || continue; : > \"$f\" || exit 1; done");
+                deFailed = clear.exitCode != 0;
             }
-
+            boolean incomplete = failed || deFailed;
             runOnUiThread(() -> {
-                if (tvLogContent != null) {
-                    tvLogContent.setText(R.string.placeholder_log);
-                }
-                Toast.makeText(this, R.string.toast_log_cleared, Toast.LENGTH_SHORT).show();
+                if (tvLogContent != null) tvLogContent.setText(R.string.logs_no_records);
+                Toast.makeText(this, incomplete ? R.string.logs_clear_incomplete : R.string.toast_log_cleared, Toast.LENGTH_LONG).show();
             });
         });
     }

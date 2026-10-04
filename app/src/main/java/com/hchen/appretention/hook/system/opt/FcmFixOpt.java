@@ -1,6 +1,7 @@
 package com.hchen.appretention.hook.system.opt;
 
 import android.app.AlarmManager;
+import android.annotation.SuppressLint;
 import android.app.PendingIntent;
 import android.content.BroadcastReceiver;
 import android.content.Context;
@@ -51,7 +52,7 @@ public final class FcmFixOpt extends HCBase {
         // Install even when OFF so a successful UI/property change can enable it live.
         for (Method method : ams.getDeclaredMethods()) {
             if (!"finishBooting".equals(method.getName())) continue;
-            hook(method, new IHook() {
+            if (!HookDiagnostics.install(TAG, method, new IHook() {
                 @Override
                 public void after() {
                     try {
@@ -61,13 +62,14 @@ public final class FcmFixOpt extends HCBase {
                         XposedLog.logW(TAG, "Could not obtain system context for FCM assistance.", error);
                     }
                 }
-            });
-            XposedLog.logI(TAG, "FCM assistance boot hook installed (owner user).");
+            })) continue;
+            HookDiagnostics.report(TAG);
             return;
         }
         XposedLog.logW(TAG, "AMS.finishBooting unavailable; FCM assistance not installed.");
     }
 
+    @SuppressLint("UnspecifiedRegisterReceiverFlag") // SDK >=33 branch supplies explicit flags.
     private void start(Context systemContext) {
         if (running != null || systemContext == null) return;
         context = systemContext;
@@ -117,6 +119,7 @@ public final class FcmFixOpt extends HCBase {
             FcmHeartbeatPolicy.DEFAULT_ENABLED);
     }
 
+    @SuppressLint("MissingPermission") // Injected into system_server using the privileged system context, not the app UID.
     private void tick() {
         try {
             alarms.cancel(tickIntent);

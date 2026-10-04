@@ -206,6 +206,8 @@ public class XposedLog extends AbstractLog {
      */
     @Override
     protected void log(int priority, String tag, String message, Throwable throwable) {
+        // Always mirror once, including successful Xposed proxy writes.
+        AndroidLog.output(priority, tag, message, throwable);
         if (fallbackUsed.get() || !ModuleData.isXposedEnvironment()) {
             if (ModuleData.isXposedEnvironment()) {
                 // 环境已就绪但处于回落态：尝试重新走 Xposed 通道，成功则解除回落。
@@ -218,14 +220,12 @@ public class XposedLog extends AbstractLog {
                     AndroidLog.logD("XposedLog", "Xposed log proxy still unavailable, staying on fallback.", t);
                 }
             }
-            AndroidLog.output(priority, tag, message, throwable);
             return;
         }
         try {
             ModuleData.getWrapper().log(priority, tag, message, throwable);
         } catch (Throwable t) {
             markFallback(t);
-            AndroidLog.output(priority, tag, message, throwable);
         }
     }
 

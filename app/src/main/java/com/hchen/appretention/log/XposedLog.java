@@ -30,134 +30,134 @@ import com.hchen.hooktool.log.LogExpand;
  * @author HChenX
  */
 public class XposedLog {
-    private static void writeLog(String msg) {
+    private static void writeLog(int priority, String msg) {
         try {
             if (ModuleData.isXposedEnvironment()) {
-                ModuleData.getWrapper().log(Log.INFO, "AppRetention", msg);
-                return;
+                ModuleData.getWrapper().log(priority, "AppRetention", msg);
             }
         } catch (Throwable ignored) {
         }
-        Log.i("AppRetention", msg);
+        // Explicit mirror: the UI does not read the framework module-log store.
+        Log.println(priority, "AppRetention", msg);
     }
 
     // -------- logE -------------
     public static void logE(String tag, String log) {
         if (HCData.getLogLevel() < HCInit.LOG_E) return;
-        writeLog(getXposedTag() + "[" + HCData.getTargetPackageName() + "][" + tag + "][E]: " + log);
+        writeLog(Log.ERROR, getXposedTag() + "[" + HCData.getTargetPackageName() + "][" + tag + "][E]: " + log);
         SaveLog.saveLogContent(tag, getXposedTag() + "[" + HCData.getTargetPackageName() + "][" + tag + "][E]: " + log);
     }
 
     public static void logE(String tag, Throwable e) {
         if (HCData.getLogLevel() < HCInit.LOG_E) return;
-        writeLog(getXposedTag() + "[" + HCData.getTargetPackageName() + "][" + tag + "][E]:\n" + LogExpand.printStackTrace(e));
+        writeLog(Log.ERROR, getXposedTag() + "[" + HCData.getTargetPackageName() + "][" + tag + "][E]:\n" + LogExpand.printStackTrace(e));
         SaveLog.saveLogContent(tag, getXposedTag() + "[" + HCData.getTargetPackageName() + "][" + tag + "][E]:\n" + LogExpand.printStackTrace(e));
     }
 
     public static void logE(String tag, String log, String stackTrace) {
         if (HCData.getLogLevel() < HCInit.LOG_E) return;
-        writeLog(getXposedTag() + "[" + HCData.getTargetPackageName() + "][" + tag + "][E]: " + log + "\n[Stack Info]: " + stackTrace);
+        writeLog(Log.ERROR, getXposedTag() + "[" + HCData.getTargetPackageName() + "][" + tag + "][E]: " + log + "\n[Stack Info]: " + stackTrace);
         SaveLog.saveLogContent(tag, getXposedTag() + "[" + HCData.getTargetPackageName() + "][" + tag + "][E]: " + log + "\n[Stack Info]: " + stackTrace);
     }
 
     public static void logE(String tag, String log, Throwable e) {
         if (HCData.getLogLevel() < HCInit.LOG_E) return;
-        writeLog(getXposedTag() + "[" + HCData.getTargetPackageName() + "][" + tag + "][E]: " + log + "\n[Stack Info]: " + LogExpand.printStackTrace(e));
+        writeLog(Log.ERROR, getXposedTag() + "[" + HCData.getTargetPackageName() + "][" + tag + "][E]: " + log + "\n[Stack Info]: " + LogExpand.printStackTrace(e));
         SaveLog.saveLogContent(tag, getXposedTag() + "[" + HCData.getTargetPackageName() + "][" + tag + "][E]: " + log + "\n[Stack Info]: " + LogExpand.printStackTrace(e));
     }
 
     public static void logENoSave(String tag, String log) {
         if (HCData.getLogLevel() < HCInit.LOG_E) return;
-        writeLog(getXposedTag() + "[" + HCData.getTargetPackageName() + "][" + tag + "][E]: " + log);
+        writeLog(Log.ERROR, getXposedTag() + "[" + HCData.getTargetPackageName() + "][" + tag + "][E]: " + log);
     }
 
     public static void logENoSave(String tag, Throwable e) {
         if (HCData.getLogLevel() < HCInit.LOG_E) return;
-        writeLog(getXposedTag() + "[" + HCData.getTargetPackageName() + "][" + tag + "][E]:\n" + LogExpand.printStackTrace(e));
+        writeLog(Log.ERROR, getXposedTag() + "[" + HCData.getTargetPackageName() + "][" + tag + "][E]:\n" + LogExpand.printStackTrace(e));
     }
 
     public static void logENoSave(String tag, String log, Throwable e) {
         if (HCData.getLogLevel() < HCInit.LOG_E) return;
-        writeLog(getXposedTag() + "[" + HCData.getTargetPackageName() + "][" + tag + "][E]: " + log + "\n[Stack Info]: " + LogExpand.printStackTrace(e));
+        writeLog(Log.ERROR, getXposedTag() + "[" + HCData.getTargetPackageName() + "][" + tag + "][E]: " + log + "\n[Stack Info]: " + LogExpand.printStackTrace(e));
     }
 
     // ----------- logW --------------
     public static void logW(String tag, String log) {
         if (HCData.getLogLevel() < HCInit.LOG_W) return;
-        writeLog(getXposedTag() + "[" + HCData.getTargetPackageName() + "][" + tag + "][W]: " + log);
+        writeLog(Log.WARN, getXposedTag() + "[" + HCData.getTargetPackageName() + "][" + tag + "][W]: " + log);
         SaveLog.saveLogContent(tag, getXposedTag() + "[" + HCData.getTargetPackageName() + "][" + tag + "][W]: " + log);
     }
 
     public static void logW(String tag, Throwable e) {
         if (HCData.getLogLevel() < HCInit.LOG_W) return;
-        writeLog(getXposedTag() + "[" + HCData.getTargetPackageName() + "][" + tag + "][W]:\n" + LogExpand.printStackTrace(e));
+        writeLog(Log.WARN, getXposedTag() + "[" + HCData.getTargetPackageName() + "][" + tag + "][W]:\n" + LogExpand.printStackTrace(e));
         SaveLog.saveLogContent(tag, getXposedTag() + "[" + HCData.getTargetPackageName() + "][" + tag + "][W]:\n" + LogExpand.printStackTrace(e));
     }
 
     public static void logW(String tag, String log, String stackTrace) {
         if (HCData.getLogLevel() < HCInit.LOG_W) return;
-        writeLog(getXposedTag() + "[" + HCData.getTargetPackageName() + "][" + tag + "][W]: " + log + "\n[Stack Info]: " + stackTrace);
+        writeLog(Log.WARN, getXposedTag() + "[" + HCData.getTargetPackageName() + "][" + tag + "][W]: " + log + "\n[Stack Info]: " + stackTrace);
         SaveLog.saveLogContent(tag, getXposedTag() + "[" + HCData.getTargetPackageName() + "][" + tag + "][W]: " + log + "\n[Stack Info]: " + stackTrace);
     }
 
     public static void logW(String tag, String log, Throwable e) {
         if (HCData.getLogLevel() < HCInit.LOG_W) return;
-        writeLog(getXposedTag() + "[" + HCData.getTargetPackageName() + "][" + tag + "][W]: " + log + "\n[Stack Info]: " + LogExpand.printStackTrace(e));
+        writeLog(Log.WARN, getXposedTag() + "[" + HCData.getTargetPackageName() + "][" + tag + "][W]: " + log + "\n[Stack Info]: " + LogExpand.printStackTrace(e));
         SaveLog.saveLogContent(tag, getXposedTag() + "[" + HCData.getTargetPackageName() + "][" + tag + "][W]: " + log + "\n[Stack Info]: " + LogExpand.printStackTrace(e));
     }
 
     // ----------- logI --------------
     public static void logI(String log) {
         if (HCData.getLogLevel() < HCInit.LOG_I) return;
-        writeLog(getXposedTag() + "[I]: " + log);
+        writeLog(Log.INFO, getXposedTag() + "[I]: " + log);
         SaveLog.saveLogContent("Any", getXposedTag() + "[I]: " + log);
     }
 
     public static void logI(String tag, String log) {
         if (HCData.getLogLevel() < HCInit.LOG_I) return;
-        writeLog(getXposedTag() + "[" + HCData.getTargetPackageName() + "][" + tag + "][I]: " + log);
+        writeLog(Log.INFO, getXposedTag() + "[" + HCData.getTargetPackageName() + "][" + tag + "][I]: " + log);
         SaveLog.saveLogContent(tag, getXposedTag() + "[" + HCData.getTargetPackageName() + "][" + tag + "][I]: " + log);
     }
 
     public static void logI(String tag, String log, String stackTrace) {
         if (HCData.getLogLevel() < HCInit.LOG_I) return;
-        writeLog(getXposedTag() + "[" + HCData.getTargetPackageName() + "][" + tag + "][I]: " + log + "\n[Stack Info]: " + stackTrace);
+        writeLog(Log.INFO, getXposedTag() + "[" + HCData.getTargetPackageName() + "][" + tag + "][I]: " + log + "\n[Stack Info]: " + stackTrace);
         SaveLog.saveLogContent(tag, getXposedTag() + "[" + HCData.getTargetPackageName() + "][" + tag + "][I]: " + log + "\n[Stack Info]: " + stackTrace);
     }
 
     public static void logI(String tag, String log, Throwable e) {
         if (HCData.getLogLevel() < HCInit.LOG_I) return;
-        writeLog(getXposedTag() + "[" + HCData.getTargetPackageName() + "][" + tag + "][I]: " + log + "\n[Stack Info]: " + LogExpand.printStackTrace(e));
+        writeLog(Log.INFO, getXposedTag() + "[" + HCData.getTargetPackageName() + "][" + tag + "][I]: " + log + "\n[Stack Info]: " + LogExpand.printStackTrace(e));
         SaveLog.saveLogContent(tag, getXposedTag() + "[" + HCData.getTargetPackageName() + "][" + tag + "][I]: " + log + "\n[Stack Info]: " + LogExpand.printStackTrace(e));
     }
 
     public static void logINoSave(String tag, String log) {
         if (HCData.getLogLevel() < HCInit.LOG_I) return;
-        writeLog(getXposedTag() + "[" + HCData.getTargetPackageName() + "][" + tag + "][I]: " + log);
+        writeLog(Log.INFO, getXposedTag() + "[" + HCData.getTargetPackageName() + "][" + tag + "][I]: " + log);
     }
 
     // ------------ logD --------------
     public static void logD(String tag, String log) {
         if (HCData.getLogLevel() < HCInit.LOG_D) return;
-        writeLog(getXposedTag() + "[" + HCData.getTargetPackageName() + "][" + tag + "][D]: " + log);
+        writeLog(Log.DEBUG, getXposedTag() + "[" + HCData.getTargetPackageName() + "][" + tag + "][D]: " + log);
         SaveLog.saveLogContent(tag, getXposedTag() + "[" + HCData.getTargetPackageName() + "][" + tag + "][D]: " + log);
     }
 
     public static void logD(String tag, Throwable e) {
         if (HCData.getLogLevel() < HCInit.LOG_D) return;
-        writeLog(getXposedTag() + "[" + HCData.getTargetPackageName() + "][" + tag + "][D]:\n" + LogExpand.printStackTrace(e));
+        writeLog(Log.DEBUG, getXposedTag() + "[" + HCData.getTargetPackageName() + "][" + tag + "][D]:\n" + LogExpand.printStackTrace(e));
         SaveLog.saveLogContent(tag, getXposedTag() + "[" + HCData.getTargetPackageName() + "][" + tag + "][D]:\n" + LogExpand.printStackTrace(e));
     }
 
     public static void logD(String tag, String log, String stackTrace) {
         if (HCData.getLogLevel() < HCInit.LOG_D) return;
-        writeLog(getXposedTag() + "[" + HCData.getTargetPackageName() + "][" + tag + "][D]: " + log + "\n[Stack Info]: " + stackTrace);
+        writeLog(Log.DEBUG, getXposedTag() + "[" + HCData.getTargetPackageName() + "][" + tag + "][D]: " + log + "\n[Stack Info]: " + stackTrace);
         SaveLog.saveLogContent(tag, getXposedTag() + "[" + HCData.getTargetPackageName() + "][" + tag + "][D]: " + log + "\n[Stack Info]: " + stackTrace);
     }
 
     public static void logD(String tag, String log, Throwable e) {
         if (HCData.getLogLevel() < HCInit.LOG_D) return;
-        writeLog(getXposedTag() + "[" + HCData.getTargetPackageName() + "][" + tag + "][D]: " + log + "\n[Stack Info]: " + LogExpand.printStackTrace(e));
+        writeLog(Log.DEBUG, getXposedTag() + "[" + HCData.getTargetPackageName() + "][" + tag + "][D]: " + log + "\n[Stack Info]: " + LogExpand.printStackTrace(e));
         SaveLog.saveLogContent(tag, getXposedTag() + "[" + HCData.getTargetPackageName() + "][" + tag + "][D]: " + log + "\n[Stack Info]: " + LogExpand.printStackTrace(e));
     }
 

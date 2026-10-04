@@ -89,9 +89,9 @@ public class LogServices extends HCBase {
                     filter.addAction(Intent.ACTION_REBOOT);
                     filter.addAction(SaveLog.ACTION_LOG_SERVICE_CONTENT);
                     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                        mContext.registerReceiver(new SystemBaseBroadcastReceiver(), filter, Context.RECEIVER_EXPORTED);
+                        mContext.registerReceiver(new SystemBaseBroadcastReceiver(), filter, "android.permission.DUMP", null, Context.RECEIVER_EXPORTED);
                     } else
-                        mContext.registerReceiver(new SystemBaseBroadcastReceiver(), filter);
+                        mContext.registerReceiver(new SystemBaseBroadcastReceiver(), filter, "android.permission.DUMP", null);
 
                     XposedLog.logI(TAG, "Register log services broadcast receiver!!");
                 }
@@ -139,6 +139,8 @@ public class LogServices extends HCBase {
                             return;
                         }
 
+                        if (!SaveLog.validFileName(logContentData.mLogFileName)
+                            || logContentData.mLogContentCache == null || logContentData.mLogContentCache.size() > 1000) return;
                         String logId = logContentData.mLogId;
                         String fileName = logContentData.mLogFileName;
                         ArrayList<String> logContent = logContentData.mLogContentCache;

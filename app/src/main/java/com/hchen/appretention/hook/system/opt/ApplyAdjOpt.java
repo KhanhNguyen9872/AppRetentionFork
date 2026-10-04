@@ -174,40 +174,25 @@ public class ApplyAdjOpt {
                         && BackgroundRestrictOpt.isRestricted(pr.packageName);
 
                     if (isRestricted) {
+                        // Never replace framework importance with cached ADJ while foreground,
+                        // visible, perceptible or running a foreground service. Exclude restricted
+                        // apps from promotion; preserve the framework's computed ADJ in all cases.
                         if (BackgroundRestrictOpt.isImmediateKillEnabled()) {
-                            Object mState = pr.mState != null ? pr.mState : getField(app, SystemField.mState);
-                            Integer curProcState = null;
+                            Integer state = null;
+                            Integer adj = null;
                             try {
-                                curProcState = (Integer) callMethod(mState, getCurProcState);
-                            } catch (Throwable ignored) {}
-
-                            Integer curAdj = null;
-                            try {
-                                Object curAdjObj = callMethod(mState, "getCurAdj");
-                                if (curAdjObj instanceof Integer) curAdj = (Integer) curAdjObj;
-                            } catch (Throwable ignored) {}
-
-                            // If curProcState is not TOP (2) or curAdj > 0: it is definitely leaving foreground/in background!
-                            boolean notForeground = (curProcState != null && curProcState != 2)
-                                    || (curAdj != null && curAdj > 0);
-
-                            if (notForeground) {
-                                int pid = 0;
-                                try {
-                                    Object pidObj = getField(app, "mPid");
-                                    if (pidObj == null) pidObj = getField(app, "pid");
-                                    if (pidObj instanceof Integer) pid = (Integer) pidObj;
-                                } catch (Throwable ignored) {}
-
-                                XposedLog.logI(TAG, "Immediate kill triggered for restricted app: " + pr.packageName + " (pid=" + pid + ")");
+                                Object stateValue = callMethod(pr.mState, getCurProcState);
+                                Object adjValue = callMethod(pr.mState, "getCurAdj");
+                                if (stateValue instanceof Integer) state = (Integer) stateValue;
+                                if (adjValue instanceof Integer) adj = (Integer) adjValue;
+                            } catch (Throwable ignored) { }
+                            if (RestrictionPolicy.canTerminate(state, adj)) {
+                                Object pidValue = getField(app, "mPid");
+                                if (!(pidValue instanceof Integer)) pidValue = getField(app, "pid");
+                                int pid = pidValue instanceof Integer ? (Integer) pidValue : 0;
                                 BackgroundRestrictOpt.terminatePackage(pr.packageName, pid, "immediate_kill_out_screen");
-                                return;
                             }
                         }
-
-                        // Demote restricted apps to cached tier (ADJ 900)
-                        pr.setCurRawAdj(900);
-                        pr.setCurAdj(900);
                         return;
                     }
 

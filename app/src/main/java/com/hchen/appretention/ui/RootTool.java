@@ -241,47 +241,8 @@ public final class RootTool {
                     "fi";
             String output = runCommand(script);
             for (String line : output.split("\\R")) {
-                    String[] parts = line.split(":", 4);
-                    if (parts.length >= 3) {
-                        try {
-                            int pid = Integer.parseInt(parts[0].trim());
-                            String name = parts[1].trim();
-                            int adj = Integer.parseInt(parts[2].trim());
-                            long memBytes = 0;
-                            if (parts.length >= 4) {
-                                try {
-                                    String rssStr = parts[3].trim().toLowerCase();
-                                    if (rssStr.endsWith("g")) {
-                                        double gb = Double.parseDouble(rssStr.replace("g", "").trim());
-                                        memBytes = (long) (gb * 1024L * 1024L * 1024L);
-                                    } else if (rssStr.endsWith("m")) {
-                                        double mb = Double.parseDouble(rssStr.replace("m", "").trim());
-                                        memBytes = (long) (mb * 1024L * 1024L);
-                                    } else if (rssStr.endsWith("k")) {
-                                        double kb = Double.parseDouble(rssStr.replace("k", "").trim());
-                                        memBytes = (long) (kb * 1024L);
-                                    } else {
-                                        long kb = Long.parseLong(rssStr);
-                                        memBytes = kb * 1024L;
-                                    }
-                                } catch (Throwable ignored) {}
-                            }
-
-                            if (!name.isEmpty() && !name.startsWith("/") && !name.startsWith("[")) {
-                                if (name.contains(" ")) {
-                                    name = name.substring(0, name.indexOf(' '));
-                                }
-                                int nullIdx = name.indexOf('\0');
-                                if (nullIdx >= 0) {
-                                    name = name.substring(0, nullIdx);
-                                }
-                                String cleanName = name.trim();
-                                if (!cleanName.isEmpty()) {
-                                    list.add(new ProcessInfo(pid, cleanName, adj, memBytes));
-                                }
-                            }
-                        } catch (Throwable ignored) {}
-                    }
+                ProcessInfo item = ProcessLineParser.parse(line);
+                if (item != null) list.add(item);
             }
         } catch (Throwable ignored) {
         }
@@ -343,44 +304,44 @@ public final class RootTool {
         return isRootAvailable();
     }
 
-    public static String runCommand(String cmd) {
-        StringBuilder sb = new StringBuilder();
-        Process p = null;
-        ExecutorService outputReader = Executors.newSingleThreadExecutor();
-        try {
-            ProcessBuilder builder = isRootAvailable()
-                ? new ProcessBuilder("su", "-c", cmd)
-                : new ProcessBuilder("sh", "-c", cmd);
-            builder.redirectErrorStream(true);
-            p = builder.start();
-            Process running = p;
-            Future<?> readerTask = outputReader.submit(() -> {
-                try (BufferedReader reader = new BufferedReader(new InputStreamReader(running.getInputStream()))) {
-                    String line;
-                    while ((line = reader.readLine()) != null) {
-                        sb.append(line).append("\n");
-                    }
-                } catch (Throwable ignored) {
-                }
-            });
-
-            if (!p.waitFor(8, TimeUnit.SECONDS)) {
-                p.destroyForcibly();
-            }
-            try {
-                readerTask.get(2, TimeUnit.SECONDS);
-            } catch (Throwable ignored) {
-                readerTask.cancel(true);
-            }
-        } catch (Throwable ignored) {
-        } finally {
-            outputReader.shutdownNow();
-            if (p != null) {
-                try {
-                    p.destroy();
-                } catch (Throwable ignored) {}
-            }
+    public static final class CommandResult {
+        public final String stdout, stderr;
+        public final int exitCode;
+        CommandResult(String stdout, String stderr, int exitCode) {
+            this.stdout = stdout; this.stderr = stderr; this.exitCode = exitCode;
         }
-        return sb.toString();
+    }
+
+    public static String runCommand(String cmd) { return runCommandResult(cmd).stdout; }
+
+    public static CommandResult runCommandResult(String cmd) {
+        StringBuffer stdout = new StringBuffer(), stderr = new StringBuffer();
+        Process process = null;
+        ExecutorService readers = Executors.newFixedThreadPool(2);
+        int exit = -1;
+        try {
+            process = (isRootAvailable() ? new ProcessBuilder("su", "-c", cmd)
+                : new ProcessBuilder("sh", "-c", cmd)).start();
+            Process running = process;
+            Future<?> out = readers.submit(() -> drain(running.getInputStream(), stdout));
+            Future<?> err = readers.submit(() -> drain(running.getErrorStream(), stderr));
+            if (process.waitFor(8, TimeUnit.SECONDS)) exit = process.exitValue();
+            else { process.destroyForcibly(); exit = 124; stderr.append("Command timed out\n"); }
+            try { out.get(2, TimeUnit.SECONDS); err.get(2, TimeUnit.SECONDS); }
+            catch (Exception error) { out.cancel(true); err.cancel(true); stderr.append("Incomplete command output\n"); }
+        } catch (Exception error) { stderr.append(error.toString()).append('\n'); }
+        finally { readers.shutdownNow(); if (process != null) process.destroy(); }
+        return new CommandResult(stdout.toString(), stderr.toString(), exit);
+    }
+
+    private static void drain(java.io.InputStream stream, StringBuffer buffer) {
+        try (BufferedReader reader = new BufferedReader(new InputStreamReader(stream))) {
+            char[] chunk = new char[4096];
+            int length;
+            while ((length = reader.read(chunk)) != -1) {
+                int remaining = 2 * 1024 * 1024 - buffer.length();
+                if (remaining > 0) buffer.append(chunk, 0, Math.min(length, remaining));
+            }
+        } catch (java.io.IOException error) { /* Process termination closes these pipes. */ }
     }
 }

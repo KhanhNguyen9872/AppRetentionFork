@@ -10,8 +10,8 @@ import com.hchen.hooktool.utils.SystemPropTool;
 import java.lang.reflect.Method;
 
 /**
- * Auto-exempts user background apps from Android Doze mode and App Standby power restrictions.
- * Ensures background network sockets, alarms, and jobs remain active when screen is off.
+ * Answers compatible Doze whitelist queries for eligible packages.
+ * This does not guarantee exemption from every alarm, job, network or standby policy.
  *
  * @author Antigravity
  */
@@ -19,10 +19,7 @@ public final class DeviceIdleOpt {
     private static final String TAG = "DeviceIdleOpt";
 
     public static void init() {
-        if (!isEnabled()) {
-            XposedLog.logD(TAG, "DeviceIdleOpt is disabled by property.");
-            return;
-        }
+        // Install while OFF; callback-time gates allow safe live toggles.
 
         Class<?> dicClass = findClassIfExists("com.android.server.DeviceIdleController");
         if (dicClass == null) {
@@ -37,7 +34,7 @@ public final class DeviceIdleOpt {
             if ((name.startsWith("isPowerSaveWhitelist") || name.startsWith("isExceptIdlePowerSaveWhitelist"))
                     && params.length == 1 && params[0] == String.class
                     && (m.getReturnType() == boolean.class || m.getReturnType() == Boolean.class)) {
-                hook(m, new IHook() {
+                HookDiagnostics.install(TAG, m, new IHook() {
                     @Override
                     public void before() {
                         if (!isEnabled()) return;
@@ -58,12 +55,12 @@ public final class DeviceIdleOpt {
                 if ((name.startsWith("isAppOnWhitelist") || name.startsWith("isExceptIdlePowerSaveWhitelist"))
                         && params.length == 1 && (params[0] == int.class || params[0] == Integer.class)
                         && (m.getReturnType() == boolean.class || m.getReturnType() == Boolean.class)) {
-                    hook(m, new IHook() {
+                    HookDiagnostics.install(TAG, m, new IHook() {
                         @Override
                         public void before() {
                             if (!isEnabled()) return;
                             int uid = (Integer) getArg(0);
-                            if (uid >= 10000) { // User installed apps
+                            if (isEligibleAppId(uid)) {
                                 setResult(true);
                             }
                         }
@@ -72,12 +69,23 @@ public final class DeviceIdleOpt {
             }
         }
 
-        XposedLog.logI(TAG, "DeviceIdleOpt initialized successfully with comprehensive whitelist hooks!");
+        HookDiagnostics.report(TAG);
     }
 
     private static boolean isEnabled() {
         return ForkFeatureGate.isEnabled()
             && SystemPropTool.getProp("persist.hchen.doze.opt.enable", true);
+    }
+
+    private static boolean isEligibleAppId(int appId) {
+        // AppId overloads describe owner-user IDs, not arbitrary full multi-user UIDs.
+        if (appId < 10000 || appId >= 100000) return false;
+        try {
+            Object pm = com.hchen.hooktool.core.CoreTool.callStaticMethod("android.app.ActivityThread", "getPackageManager");
+            if (pm == null) return false;
+            String[] packages = (String[]) com.hchen.hooktool.core.CoreTool.callMethod(pm, "getPackagesForUid", appId);
+            return DozeTargetPolicy.shouldExempt(packages, DeviceIdleOpt::isTargetUserApp);
+        } catch (Throwable ignored) { return false; }
     }
 
     private static boolean isTargetUserApp(String packageName) {

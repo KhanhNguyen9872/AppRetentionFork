@@ -11,7 +11,7 @@ import java.lang.reflect.Method;
 
 /**
  * Disables Android App Hibernation (Android 12-16) to prevent the system
- * from automatically freezing unused apps or revoking permissions.
+ * from hibernating eligible unused apps. Permission auto-reset is a separate policy.
  *
  * @author Antigravity
  */
@@ -19,10 +19,7 @@ public final class AppHibernationOpt {
     private static final String TAG = "AppHibernationOpt";
 
     public static void init() {
-        if (!isEnabled()) {
-            XposedLog.logD(TAG, "AppHibernationOpt disabled by property.");
-            return;
-        }
+        // Install while OFF; callback-time gates allow safe live toggles.
 
         Class<?> serviceClass = findClassIfExists("com.android.server.apphibernation.AppHibernationService");
         if (serviceClass == null) {
@@ -42,7 +39,7 @@ public final class AppHibernationOpt {
             if (packageFirst && booleanLast && (retType == void.class || retType == boolean.class
                 || retType == Boolean.class) && ("setHibernatingGlobally".equals(name)
                 || "setHibernatingForUser".equals(name))) {
-                hook(method, new IHook() {
+                HookDiagnostics.install(TAG, method, new IHook() {
                     @Override
                     public void before() {
                         if (!isEnabled()) return;
@@ -68,7 +65,7 @@ public final class AppHibernationOpt {
                 });
             } else if (packageFirst && (retType == boolean.class || retType == Boolean.class)
                 && ("isHibernatingGlobally".equals(name) || "isHibernatingForUser".equals(name))) {
-                hook(method, new IHook() {
+                HookDiagnostics.install(TAG, method, new IHook() {
                     @Override
                     public void before() {
                         if (!isEnabled()) return;
@@ -82,7 +79,7 @@ public final class AppHibernationOpt {
             }
         }
 
-        XposedLog.logI(TAG, "AppHibernationOpt initialized successfully!");
+        HookDiagnostics.report(TAG);
     }
 
     private static boolean isEnabled() {

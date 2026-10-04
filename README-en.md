@@ -11,6 +11,39 @@
 
 <p><b><a href="README-en.md">English</a> | <a href="README.md">简体中文</a></b></p>
 <p>Hook system kill logic to implement background keep alive</p>
+
+## Diagnostics and live controls
+
+- Build with **JDK 21**. The app requires a compatible modern LibXposed API 101
+  framework; root access alone does not mean the module is loaded.
+- After updating the APK, enable the module for **System Framework**, select the
+  appropriate OEM scope where applicable, and reboot to load the updated hooks.
+- The dashboard requests fresh, permission-protected registration counts from
+  the system hook. Registration counts are not proof of runtime protection.
+  Kill Shield distinguishes OFF, pending property synchronization, unverified,
+  unavailable and registered states. Process details show measured ADJ rather
+  than substituting the requested VIP value.
+- Compatible Kill Shield, Doze, hibernation, Auto Start and Nubia hooks are
+  installed even when OFF. Their effects check the live setting. OEM methods
+  that cannot be matched safely are reported as unavailable, not successful.
+  Fork controls are disabled on Android 10/11, where the legacy base hook does
+  not initialize the same extension set.
+- Restricted apps retain their framework-computed foreground, visible and
+  foreground-service importance. Automatic termination rechecks package/PID
+  ownership and current kernel ADJ. Unknown/shared Doze IDs fail closed.
+- Logs are explicitly mirrored to module-tagged logcat. Grant root to read
+  system-process records. Refresh displays a snapshot; it is not a continuously
+  streaming or permanent archive. Clear hides older module records and truncates
+  module files in place, without clearing other applications' logcat or unlinking
+  a writer's open file.
+- VIP retention, compatible Doze queries and hibernation hooks are best effort.
+  They do not guarantee immunity to crashes, force-stop, native LMKD kills,
+  independent permission auto-reset or every OEM idle policy.
+
+Before relying on a device, test boot-OFF → ON, restricted foreground/visible/FGS
+apps, secondary `:push` processes, measured VIP ADJ, Logs refresh/export/clear,
+and actual FCM delivery. Local builds and policy tests do not replace this
+rooted-device/ROM validation.
 </div>
 
 ---

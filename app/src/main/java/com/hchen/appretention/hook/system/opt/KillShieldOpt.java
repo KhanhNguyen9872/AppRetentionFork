@@ -28,13 +28,10 @@ public final class KillShieldOpt {
     private static final String TAG = "KillShieldOpt";
 
     public static void init() {
-        if (!isEnabled()) {
-            XposedLog.logD(TAG, "KillShield is disabled by property.");
-            return;
-        }
+        // Install while OFF; callback-time gates allow safe live toggles.
 
         hookProcessRecordKill();
-        XposedLog.logI(TAG, "KillShield initialized successfully!");
+        HookDiagnostics.report(TAG);
     }
 
     private static boolean isEnabled() {
@@ -98,8 +95,8 @@ public final class KillShieldOpt {
         for (Method method : methods) {
             if ("killLocked".equals(method.getName())) {
                 Class<?>[] params = method.getParameterTypes();
-                if (params.length >= 1 && params[0] == String.class) {
-                    hook(method, new IHook() {
+                if (params.length >= 1 && params[0] == String.class && method.getReturnType() == void.class) {
+                    HookDiagnostics.install(TAG, method, new IHook() {
                         @Override
                         public void before() {
                             if (!isEnabled()) return;

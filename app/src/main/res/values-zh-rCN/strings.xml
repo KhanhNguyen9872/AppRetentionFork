@@ -4,7 +4,7 @@
 by: HChenX &amp; KhanhNguyen9872</string>
     <!-- Process Actions -->
     <string name="btn_kill_process">终止</string>
-    <string name="toast_killed_process">已终止 %s</string>
+    <string name="toast_killed_process">已接受对 %s 的终止 / 强制停止命令</string>
     <string name="format_process_pid">PID: %1$d - %2$s</string>
     <!-- Navigation Tabs -->
     <string name="nav_dashboard">仪表盘</string>
@@ -14,7 +14,7 @@ by: HChenX &amp; KhanhNguyen9872</string>
 
     <!-- Keep-Alive Dedicated Page -->
     <string name="tab_keep_alive_title">后台保活列表</string>
-    <string name="tab_keep_alive_desc">锁定的常驻后台应用，享有防杀免疫。</string>
+    <string name="tab_keep_alive_desc">已请求后台留存策略的应用。</string>
     <string name="chip_all_apps">全部 (%d)</string>
     <string name="chip_keep_alive_only">已保活 (%d)</string>
     <string name="badge_keep_alive_locked">常驻后台</string>
@@ -26,7 +26,7 @@ by: HChenX &amp; KhanhNguyen9872</string>
     <string name="title_logs_header">系统实时 Hook 日志</string>
     <string name="btn_copy_log">复制</string>
     <string name="toast_log_copied">已复制日志到剪贴板</string>
-    <string name="toast_log_cleared">已清空日志</string>
+    <string name="toast_log_cleared">已清空模块日志视图；其他应用日志未更改</string>
     <string name="nav_settings">设置</string>
     <string name="title_settings">系统与保活设置</string>
     <string name="desc_settings">管理后台行为、系统钩子配置与进程限制策略</string>
@@ -95,13 +95,13 @@ by: HChenX &amp; KhanhNguyen9872</string>
     <string name="sheet_label_uid">UID</string>
     <string name="sheet_label_ram">内存</string>
     <string name="sheet_label_adj">OOM ADJ</string>
-    <string name="sheet_status_vip">保活锁定保护</string>
+    <string name="sheet_status_vip">已请求保活（以测量的 ADJ 为准）</string>
     <string name="sheet_status_restricted">后台受限 (退出/内存紧张时清理)</string>
     <string name="sheet_status_foreground">前台活跃进程 / 正在屏幕显示</string>
     <string name="sheet_status_perceptible">可感知进程 / 正在播放音频或通知</string>
     <string name="sheet_status_service">后台服务进程</string>
     <string name="sheet_status_cached">缓存进程 (低优先级)</string>
-    <string name="toast_force_stop_success">已强行停止 %s</string>
+    <string name="toast_force_stop_success">已接受对 %s 的强制停止命令</string>
     <string name="toast_copied_to_clipboard">已复制 %s 到剪贴板</string>
 
     <string name="loading_processes">正在扫描后台运行进程...</string>
@@ -148,4 +148,59 @@ by: HChenX &amp; KhanhNguyen9872</string>
 
     <string name="title_fcm_fix">修复 FCM</string>
     <string name="desc_fcm_fix">默认开启。约每 5 分钟请求 Google Play 服务发送心跳，辅助恢复失效的推送连接。不保证所有通知即时送达。由系统钩子为主用户运行，无需保持此应用打开。</string>
+    <string name="badge_status_active">Hook 状态未验证</string>
+    <string name="status_killshield_active">KillShield：设置开启，Hook 未验证</string>
+    <string name="badge_hooks_registered">已注册 %d 个 Hook；效果未验证</string>
+    <string name="status_killshield_off">KillShield：已关闭</string>
+    <string name="status_killshield_unverified">KillShield：设置开启，注册状态未验证</string>
+    <string name="status_killshield_unavailable">KillShield：未注册兼容的 Hook</string>
+    <string name="status_killshield_registered">KillShield：开启，已注册 %d 个 Hook（效果未验证）</string>
+    <string name="status_killshield_pending">KillShield：保存的设置与系统不同，等待同步</string>
+    <string name="logs_no_records">暂无新模块日志。请启用系统框架作用域，安装更新后重启。读取系统进程日志需要 Root。</string>
+    <string name="logs_clear_incomplete">日志视图已清空；部分文件无法清空。请授予 Root 后重试。</string>
+    <string name="desc_keep_alive_list">为选定应用请求更强的后台留存。仍可能崩溃、被强制停止或因低内存被终止。</string>
+    <string name="dialog_keep_alive_subtitle">为选定应用应用后台留存策略，并非绝对防杀。</string>
+    <string name="desc_doze">为符合条件的应用响应兼容的 Doze 白名单检查，排除受限应用。其他空闲策略仍可能生效。</string>
+    <string name="desc_hibernation">阻止对符合条件应用的兼容休眠请求。权限自动重置属于独立策略。</string>
+    <string name="desc_autostart">绕过符合条件应用的兼容 OEM 启动检查（布尔返回值）；是否可用取决于 ROM。</string>
+    <string name="dialog_root_message">Root 权限不能证明 Hook 已启用。请在兼容的 Xposed 框架中启用本模块，并选择系统框架作用域。\n\n读取系统日志、进程指标以及同步属性需要 Root。授权后刷新状态以获取当前 Hook 注册数量。</string>
+    <string name="title_system_framework">系统框架</string>
+    <string name="status_root_detecting">作用域：android（system_server）• Root：检测中…</string>
+    <string name="status_root_requesting">作用域：android（system_server）• Root：正在请求授权…</string>
+    <string name="status_root_active">作用域：android（system_server）• Root：已授权</string>
+    <string name="status_root_limited">作用域：android（system_server）• Root：未授权（受限模式）</string>
+    <string name="toast_root_active">Root 已授权；Hook 状态需单独验证</string>
+    <string name="title_hardware_monitor">硬件监控</string>
+    <string name="label_auto_refresh">自动刷新：5 秒</string>
+    <string name="label_ram_memory">内存</string>
+    <string name="label_cpu_processor">处理器</string>
+    <string name="label_internal_storage">内部存储</string>
+    <string name="title_keep_alive_list">保活列表</string>
+    <string name="format_keep_alive_summary">保活：%d 个应用</string>
+    <string name="btn_select_keep_alive_apps">选择保活应用</string>
+    <string name="toast_saved_keep_alive_apps">已保存 %d 个保活应用</string>
+    <string name="title_retention_controls">留存控制</string>
+    <string name="title_tiered_adj">分层留存优先级</string>
+    <string name="desc_tiered_adj">将最近的后台应用提升至可感知层（ADJ 200–245），增强后台留存。</string>
+    <string name="title_killshield">KillShield 保护</string>
+    <string name="desc_killshield">拦截自动超时、CPU 过载和空闲清理，保留手动关闭行为。</string>
+    <string name="title_doze">Doze 白名单豁免</string>
+    <string name="title_nubia">RedMagic / Nubia 防杀</string>
+    <string name="desc_nubia">拦截兼容的 NeoPower、SmartEngine 和 GameSpace 后台清理方法。</string>
+    <string name="title_hibernation">禁用应用休眠</string>
+    <string name="title_autostart">绕过 OEM 自启动限制</string>
+    <string name="title_active_processes">活动后台进程</string>
+    <string name="format_process_count">%d 个应用</string>
+    <string name="status_root_not_granted_scanning">Root 未授权（受限扫描）</string>
+    <string name="title_retention_log">留存日志</string>
+    <string name="btn_clear_log">清空</string>
+    <string name="placeholder_log">发生留存事件时将在此显示日志…</string>
+    <string name="dialog_root_title">Root 未授权</string>
+    <string name="btn_dialog_retry_root">重试 / 授权</string>
+    <string name="btn_dialog_continue_limited">继续（受限模式）</string>
+    <string name="dialog_keep_alive_title">保活列表</string>
+    <string name="hint_search_apps">搜索应用…</string>
+    <string name="btn_cancel">取消</string>
+    <string name="btn_save">保存</string>
+    <string name="toast_process_action_failed">进程操作失败或 Root 不可用；请刷新检查进程。</string>
 </resources>

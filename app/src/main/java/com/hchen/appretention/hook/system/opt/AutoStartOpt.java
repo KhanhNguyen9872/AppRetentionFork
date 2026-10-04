@@ -21,10 +21,7 @@ public final class AutoStartOpt {
     private static final String TAG = "AutoStartOpt";
 
     public static void init() {
-        if (!isEnabled()) {
-            XposedLog.logD(TAG, "AutoStartOpt disabled by property.");
-            return;
-        }
+        // Install while OFF; callback-time gates allow safe live toggles.
 
         String[] targetClasses = new String[]{
             // Nubia / RedMagic
@@ -44,16 +41,14 @@ public final class AutoStartOpt {
             "com.android.server.am.OplusAppStartupManager"
         };
 
-        int hookedCount = 0;
         for (String className : targetClasses) {
             Class<?> clazz = findClassIfExists(className);
             if (clazz == null) continue;
 
             for (Method m : clazz.getDeclaredMethods()) {
-                String name = m.getName().toLowerCase();
+                String name = m.getName().toLowerCase(java.util.Locale.ROOT);
                 Class<?> retType = m.getReturnType();
-                boolean supportedReturn = retType == boolean.class || retType == Boolean.class
-                    || retType == int.class || retType == Integer.class;
+                boolean supportedReturn = retType == boolean.class || retType == Boolean.class;
                 boolean hasPackageArgument = false;
                 for (Class<?> type : m.getParameterTypes()) {
                     if (type == String.class) {
@@ -63,10 +58,11 @@ public final class AutoStartOpt {
                 }
                 if (!supportedReturn || !hasPackageArgument) continue;
 
+                // Only boolean allow/deny APIs have unambiguous result semantics.
                 // Methods that allow / grant auto-start
                 if (name.contains("autorun") || name.contains("autostart") || name.contains("bootallow")
                         || name.contains("allowstart") || name.contains("isallow") || name.contains("canstart")) {
-                    hook(m, new IHook() {
+                    HookDiagnostics.install(TAG, m, new IHook() {
                         @Override
                         public void before() {
                             if (!isEnabled()) return;
@@ -80,18 +76,13 @@ public final class AutoStartOpt {
                                 }
                             }
 
-                            if (retType == boolean.class || retType == Boolean.class) {
-                                setResult(true);
-                            } else if (retType == int.class || retType == Integer.class) {
-                                setResult(1);
-                            }
+                            setResult(true);
                         }
                     });
-                    hookedCount++;
                 }
                 // Methods that intercept / prevent startup (e.g. shouldPreventRestart, shouldPreventStart)
                 else if (name.contains("shouldprevent") || name.contains("preventstart") || name.contains("interceptstart")) {
-                    hook(m, new IHook() {
+                    HookDiagnostics.install(TAG, m, new IHook() {
                         @Override
                         public void before() {
                             if (!isEnabled()) return;
@@ -104,19 +95,14 @@ public final class AutoStartOpt {
                                 }
                             }
 
-                            if (retType == boolean.class || retType == Boolean.class) {
-                                setResult(false);
-                            } else if (retType == int.class || retType == Integer.class) {
-                                setResult(0);
-                            }
+                            setResult(false);
                         }
                     });
-                    hookedCount++;
                 }
             }
         }
 
-        XposedLog.logI(TAG, "AutoStartOpt initialized successfully! Hooked " + hookedCount + " OEM methods.");
+        HookDiagnostics.report(TAG);
     }
 
     private static boolean isExcludedTarget(String packageName) {

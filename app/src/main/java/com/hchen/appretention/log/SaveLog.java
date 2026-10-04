@@ -100,7 +100,6 @@ public class SaveLog {
         }
         fileOrDir.delete();
     }
-    private static String LOG_FILE_FULL_PATH = "";
     private static final HashMap<String, LogFileStateData> mLogFileStateDataMap = new HashMap<>();
     private static final HashMap<String, LogContentData> mLogContentDataMap = new HashMap<>();
     private static boolean isWaitingSystemBootCompleted = false;
@@ -114,9 +113,8 @@ public class SaveLog {
         openFile(key, getRandomNumber());
     }
 
-    public static void initLogToFile(String fileName) {
-        if (fileName == null) return;
-        if (fileName.isEmpty()) return;
+    public static synchronized void initLogToFile(String fileName) {
+        if (!validFileName(fileName)) return;
         LogContentData mLogContentData = new LogContentData();
         mLogContentData.mLogFileName = fileName;
         mLogContentData.mLogId = getRandomNumber();
@@ -124,7 +122,12 @@ public class SaveLog {
         waitSystemBootCompletedIfNeed();
     }
 
+    public static boolean validFileName(String name) {
+        return LogFilePolicy.validName(name);
+    }
+
     private static boolean createFileIfNeed(String fileName) {
+        if (!validFileName(fileName)) return false;
         LogFileStateData data = mLogFileStateDataMap.get(fileName);
         if (data != null && data.isCreatedFile) return true;
         String fullPath = LOG_FILE_PATH + fileName + ".log";
@@ -141,16 +144,16 @@ public class SaveLog {
                     return false;
                 }
             }
-            path.setReadable(true, false);
-            path.setWritable(true, false);
-            path.setExecutable(true, false);
+            path.setReadable(true, true);
+            path.setWritable(true, true);
+            path.setExecutable(true, true);
 
             if (!file.exists() && !file.createNewFile()) {
                 logENoSave(TAG, "Create log file failed! Path: " + fullPath);
                 return false;
             }
-            file.setReadable(true, false);
-            file.setWritable(true, false);
+            file.setReadable(true, true);
+            file.setWritable(true, true);
             data.isCreatedFile = true;
         } catch (IOException e) {
             logENoSave(TAG, "Create log file failed! Path: " + fullPath, e);
@@ -160,7 +163,8 @@ public class SaveLog {
         return true;
     }
 
-    public static void openFile(String fileName, String logId) {
+    public static synchronized void openFile(String fileName, String logId) {
+        if (!validFileName(fileName) || logId == null) return;
         LogFileStateData data = mLogFileStateDataMap.get(fileName);
         if (data == null) {
             if (createFileIfNeed(fileName)) {
@@ -328,13 +332,13 @@ public class SaveLog {
         return tag;
     }
 
-    public static void writeFile(String fileName, ArrayList<String> logs) {
+    public static synchronized void writeFile(String fileName, ArrayList<String> logs) {
         for (String log : logs) {
             writeFile(fileName, log);
         }
     }
 
-    public static void writeFile(String fileName, String log) {
+    public static synchronized void writeFile(String fileName, String log) {
         LogFileStateData data = mLogFileStateDataMap.get(fileName);
         if (data == null) return;
         if (!data.isCreatedFile) return;
@@ -344,25 +348,29 @@ public class SaveLog {
             data.mWriter.newLine();
             data.mWriter.flush();
         } catch (IOException e) {
-            logENoSave(TAG, "Write log file failed! Path: " + LOG_FILE_FULL_PATH, e);
+            logENoSave(TAG, "Write log file failed! Path: " + data.mFilePath, e);
         }
     }
 
-    private static void resetFile(String fileName) {
+    private static synchronized void resetFile(String fileName) {
         LogFileStateData data = mLogFileStateDataMap.get(fileName);
-        if (data == null) return;
-        if (!data.isCreatedFile) return;
+        if (data == null || !data.isCreatedFile) return;
+        boolean reopen = data.isOpened;
+        closeFile(fileName);
         try {
-            BufferedWriter reset = new BufferedWriter(new FileWriter(LOG_FILE_FULL_PATH));
-            reset.write("");
-            reset.flush();
-            reset.close();
-        } catch (IOException e) {
-            logENoSave(TAG, "Reset log file failed! Path: " + LOG_FILE_FULL_PATH, e);
+            // Truncate the actual per-file path; never unlink an active writer.
+            LogFilePolicy.truncate(new File(data.mFilePath));
+            if (reopen) {
+                data.mWriter = new BufferedWriter(new FileWriter(data.mFilePath, true));
+                data.mReader = new BufferedReader(new FileReader(data.mFilePath));
+                data.isOpened = true;
+            }
+        } catch (IOException error) {
+            logENoSave(TAG, "Reset log file failed! Path: " + data.mFilePath, error);
         }
     }
 
-    public static void closeFile(String fileName) {
+    public static synchronized void closeFile(String fileName) {
         LogFileStateData data = mLogFileStateDataMap.get(fileName);
         if (data == null) return;
         if (!data.isCreatedFile) return;
@@ -374,11 +382,11 @@ public class SaveLog {
             data.mReader = null;
             data.isOpened = false;
         } catch (IOException e) {
-            logENoSave(TAG, "Close log file failed! Path: " + LOG_FILE_FULL_PATH, e);
+            logENoSave(TAG, "Close log file failed! Path: " + data.mFilePath, e);
         }
     }
 
-    public static void removeAllOldLogFileAndCopyLogFileToOldPathIfNeed() {
+    public static synchronized void removeAllOldLogFileAndCopyLogFileToOldPathIfNeed() {
         File oldFilePath = new File(LOG_OLD_FILE_PATH);
         if (!oldFilePath.exists()) {
             if (!oldFilePath.mkdirs()) {
@@ -473,7 +481,7 @@ public class SaveLog {
             data.mWriter.newLine();
             data.mWriter.flush();
         } catch (IOException e) {
-            logENoSave(TAG, "Init log file content failed! Path: " + LOG_FILE_FULL_PATH, e);
+            logENoSave(TAG, "Init log file content failed! Path: " + data.mFilePath, e);
         }
     }
 

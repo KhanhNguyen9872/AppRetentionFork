@@ -107,7 +107,9 @@ public class HookInit extends ModuleEntrance {
                 Class<?> hookClass = getClass().getClassLoader().loadClass(className);
                 HCBase hcBase = (HCBase) hookClass.getDeclaredConstructor().newInstance();
                 SaveLog.initLogToFile(hcBase.TAG);
+                com.hchen.appretention.log.XposedLog.logINoSave(TAG, "Initializing " + hcBase.TAG + " in " + targetPackage);
                 hcBase.onLoadPackage();
+                com.hchen.appretention.log.XposedLog.logINoSave(TAG, "Initialization returned: " + hcBase.TAG + "; consult per-feature registration counts.");
             } catch (Throwable e) {
                 logENoSave(TAG, e);
             }

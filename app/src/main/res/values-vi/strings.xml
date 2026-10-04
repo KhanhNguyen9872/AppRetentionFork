@@ -6,12 +6,12 @@ bởi: HChenX &amp; KhanhNguyen9872</string>
 
     <!-- System Status Card -->
     <string name="title_system_framework">Khung Hệ Thống (System Framework)</string>
-    <string name="badge_status_active">Hoạt động (API 101)</string>
+    <string name="badge_status_active">Chưa xác minh hook</string>
     <string name="status_root_detecting">Phạm vi: android (system_server) • Root: Đang kiểm tra...</string>
     <string name="status_root_requesting">Phạm vi: android (system_server) • Root: Đang yêu cầu quyền...</string>
     <string name="status_root_active">Phạm vi: android (system_server) • Root: Hoạt động (KernelSU/Magisk/APatch)</string>
     <string name="status_root_limited">Phạm vi: android (system_server) • Root: Chưa cấp quyền (Chế độ hạn chế)</string>
-    <string name="status_killshield_active">KillShield: Đang hoạt động &amp; Bảo vệ tiến trình ngầm</string>
+    <string name="status_killshield_active">KillShield: đã bật cài đặt; chưa xác minh hook</string>
     <string name="status_fork_extensions_disabled">Baseline an toàn: đã tắt các hook hệ thống chỉ có ở bản fork</string>
     <string name="toast_root_active">Root: Hoạt động với đầy đủ quyền Kernel &amp; System</string>
 
@@ -38,7 +38,7 @@ bởi: HChenX &amp; KhanhNguyen9872</string>
 
     <!-- Keep-Alive List Card -->
     <string name="title_keep_alive_list">Danh Sách Giữ Chạy Nền (Keep-Alive)</string>
-    <string name="desc_keep_alive_list">Các ứng dụng trong danh sách này được khóa cố định và miễn nhiễm hoàn toàn với cơ chế diệt ngầm của hệ thống.</string>
+    <string name="desc_keep_alive_list">Yêu cầu giữ nền tốt hơn cho ứng dụng đã chọn. Vẫn có thể bị lỗi, buộc dừng hoặc diệt khi thiếu bộ nhớ.</string>
     <string name="format_keep_alive_summary">Giữ chạy nền: %d ứng dụng</string>
     <string name="btn_select_keep_alive_apps">Chọn Ứng Dụng Giữ Chạy Nền</string>
     <string name="toast_saved_keep_alive_apps">Đã lưu %d ứng dụng Giữ chạy nền</string>
@@ -57,13 +57,13 @@ bởi: HChenX &amp; KhanhNguyen9872</string>
     <string name="title_killshield">Khiên Bảo Vệ KillShield</string>
     <string name="desc_killshield">Chặn hệ thống tự động diệt app do quá giờ, tăng tải CPU hoặc dọn dẹp bộ nhớ đệm, nhưng vẫn cho phép vuốt tắt thủ công.</string>
     <string name="title_doze">Miễn Trừ Chế Độ Doze Tự Động</string>
-    <string name="desc_doze">Duy trì kết nối mạng, báo thức và socket cho tất cả các app chạy nền ngay cả khi tắt màn hình.</string>
+    <string name="desc_doze">Miễn các kiểm tra danh sách trắng Doze tương thích cho ứng dụng đủ điều kiện; loại trừ app Hạn chế. Chính sách nhàn rỗi khác vẫn có thể áp dụng.</string>
     <string name="title_nubia">Khiên Chống Diệt App RedMagic / Nubia</string>
     <string name="desc_nubia">Vô hiệu hóa trình dọn dẹp bộ nhớ NeoPower, SmartEngine và GameSpace trên thiết bị RedMagic.</string>
     <string name="title_hibernation">Tắt Đóng Băng Ứng Dụng (App Hibernation)</string>
-    <string name="desc_hibernation">Ngăn Android tự động đóng băng các app ít dùng hoặc tự ý thu hồi quyền hạn.</string>
+    <string name="desc_hibernation">Chặn yêu cầu ngủ đông tương thích cho ứng dụng đủ điều kiện. Tự đặt lại quyền là chính sách riêng.</string>
     <string name="title_autostart">Bỏ Qua Giới Hạn Tự Khởi Chạy Của OEM</string>
-    <string name="desc_autostart">Đảm bảo tất cả app người dùng nhận được tín hiệu BOOT_COMPLETED khi khởi động lại máy.</string>
+    <string name="desc_autostart">Bỏ qua kiểm tra khởi chạy OEM tương thích có kết quả boolean; khả dụng tùy ROM.</string>
 
     <!-- Active Background Processes Card -->
     <string name="title_active_processes">Tiến Trình Chạy Ngầm Đang Hoạt Động</string>
@@ -77,19 +77,19 @@ bởi: HChenX &amp; KhanhNguyen9872</string>
 
     <!-- Root Permission Explanation Dialog -->
     <string name="dialog_root_title">Quyền Root Chưa Được Cấp</string>
-    <string name="dialog_root_message" formatted="false">AppRetention vẫn đang hoạt động ổn định ở tầng System Framework (các cơ chế khóa giữ nền và chống kill ngầm của module Xposed vẫn có hiệu lực).\n\nTuy nhiên, quyền Root là cần thiết để:\n• Đọc chính xác 100% tài nguyên phần cứng (CPU kernel load, RAM meminfo, Storage df).\n• Quét danh sách tiến trình chạy ngầm &amp; OOM Score ADJ theo thời gian thực.\n• Đồng bộ các thuộc tính hệ thống (persist properties) ngay lập tức.\n\nBạn có thể cấp quyền trong Magisk, KernelSU hoặc APatch bất cứ lúc nào.</string>
+    <string name="dialog_root_message">Quyền root không chứng minh hook đã hoạt động. Hãy bật module trong framework Xposed tương thích và chọn System Framework.\n\nCần root để đọc logcat hệ thống, thông số tiến trình và đồng bộ thuộc tính. Sau khi cấp root, làm mới trạng thái để lấy số hook đã đăng ký.</string>
     <string name="btn_dialog_retry_root">Thử lại / Cấp quyền</string>
     <string name="btn_dialog_continue_limited">Tiếp tục (Chế độ hạn chế)</string>
 
     <!-- Keep-Alive Selection Dialog -->
     <string name="dialog_keep_alive_title">Danh Sách Giữ Chạy Nền</string>
-    <string name="dialog_keep_alive_subtitle">Các ứng dụng được chọn sẽ được khóa giữ nền (Miễn nhiễm diệt ngầm).</string>
+    <string name="dialog_keep_alive_subtitle">Ứng dụng đã chọn được áp dụng chính sách giữ nền, không miễn nhiễm hoàn toàn với việc bị diệt.</string>
     <string name="hint_search_apps">Tìm kiếm ứng dụng...</string>
     <string name="btn_cancel">Hủy</string>
     <string name="btn_save">Lưu</string>
     <!-- Process Actions -->
     <string name="btn_kill_process">Đóng</string>
-    <string name="toast_killed_process">Đã buộc dừng %s</string>
+    <string name="toast_killed_process">Đã chấp nhận lệnh diệt / buộc dừng %s</string>
     <string name="format_process_pid">PID: %1$d - %2$s</string>
     <!-- Navigation Tabs -->
     <string name="nav_dashboard">Tổng quan</string>
@@ -99,7 +99,7 @@ bởi: HChenX &amp; KhanhNguyen9872</string>
 
     <!-- Keep-Alive Dedicated Page -->
     <string name="tab_keep_alive_title">Danh sách Keep-Alive</string>
-    <string name="tab_keep_alive_desc">Các ứng dụng được ghim giữ nền miễn nhiễm bị hệ thống tắt.</string>
+    <string name="tab_keep_alive_desc">Ứng dụng được yêu cầu áp dụng chính sách giữ nền.</string>
     <string name="chip_all_apps">Tất cả (%d)</string>
     <string name="chip_keep_alive_only">Đang giữ (%d)</string>
     <string name="badge_keep_alive_locked">GIỮ CHẠY NỀN</string>
@@ -111,7 +111,7 @@ bởi: HChenX &amp; KhanhNguyen9872</string>
     <string name="title_logs_header">Nhật ký Hook Hệ Thống</string>
     <string name="btn_copy_log">Sao chép</string>
     <string name="toast_log_copied">Đã sao chép log vào clipboard</string>
-    <string name="toast_log_cleared">Đã xoá nhật ký</string>
+    <string name="toast_log_cleared">Đã xóa nhật ký hiển thị của module; giữ nguyên nhật ký ứng dụng khác</string>
     <string name="nav_settings">Cài đặt</string>
     <string name="title_settings">Cài đặt &amp; Tối ưu hóa</string>
     <string name="desc_settings">Quản lý hành vi nền, cấu hình hook hệ thống và chính sách giới hạn</string>
@@ -173,13 +173,13 @@ bởi: HChenX &amp; KhanhNguyen9872</string>
     <string name="sheet_label_uid">UID</string>
     <string name="sheet_label_ram">RAM</string>
     <string name="sheet_label_adj">OOM ADJ</string>
-    <string name="sheet_status_vip">Bảo vệ giữ chạy ngầm</string>
+    <string name="sheet_status_vip">Đã yêu cầu giữ nền (xem ADJ đo được)</string>
     <string name="sheet_status_restricted">Bị hạn chế (Dọn dẹp khi thoát / thiếu RAM)</string>
     <string name="sheet_status_foreground">Tiến trình tiền cảnh / Đang hiển thị</string>
     <string name="sheet_status_perceptible">Tiến trình có thể nhận biết / Âm thanh / Thông báo</string>
     <string name="sheet_status_service">Tiến trình dịch vụ nền</string>
     <string name="sheet_status_cached">Tiến trình bộ nhớ đệm (Ưu tiên thấp)</string>
-    <string name="toast_force_stop_success">Đã buộc dừng %s</string>
+    <string name="toast_force_stop_success">Đã chấp nhận lệnh buộc dừng %s</string>
     <string name="toast_copied_to_clipboard">Đã sao chép %s vào bộ nhớ tạm</string>
 
     <string name="loading_processes">Đang quét tiến trình chạy ngầm...</string>
@@ -211,4 +211,13 @@ bởi: HChenX &amp; KhanhNguyen9872</string>
 
     <string name="title_fcm_fix">Fix FCM</string>
     <string name="desc_fcm_fix">Mặc định bật. Yêu cầu Google Play services gửi heartbeat khoảng mỗi 5 phút để hỗ trợ phục hồi kết nối push bị treo. Không đảm bảo mọi thông báo đến tức thì. Chạy trong hook hệ thống cho người dùng chính, không cần mở ứng dụng.</string>
+    <string name="badge_hooks_registered">Đã đăng ký %d hook; chưa xác minh tác dụng</string>
+    <string name="status_killshield_off">KillShield: TẮT</string>
+    <string name="status_killshield_unverified">KillShield: đã bật; chưa xác minh đăng ký hook</string>
+    <string name="status_killshield_unavailable">KillShield: chưa đăng ký được hook tương thích</string>
+    <string name="status_killshield_registered">KillShield: BẬT; đã đăng ký %d hook (chưa xác minh tác dụng)</string>
+    <string name="status_killshield_pending">KillShield: cài đặt đã lưu khác hệ thống; chờ đồng bộ</string>
+    <string name="logs_no_records">Chưa có nhật ký module mới. Bật module cho System Framework và khởi động lại sau khi cài bản cập nhật. Cần root để đọc logcat của tiến trình hệ thống.</string>
+    <string name="logs_clear_incomplete">Đã xóa nhật ký hiển thị; chưa thể làm rỗng một số tệp. Hãy cấp root và thử lại.</string>
+    <string name="toast_process_action_failed">Lệnh xử lý tiến trình thất bại hoặc chưa có root; làm mới để kiểm tra.</string>
 </resources>

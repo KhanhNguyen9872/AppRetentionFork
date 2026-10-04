@@ -26,6 +26,8 @@ import java.io.File;
 import java.io.FileReader;
 import java.lang.reflect.Method;
 import java.util.HashSet;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ExecutorService;
 
 /**
  * Manages Background Restriction (Chặn chạy ngầm / Blacklist):
@@ -39,6 +41,9 @@ import java.util.HashSet;
  */
 public final class BackgroundRestrictOpt {
     private static final String TAG = "BackgroundRestrictOpt";
+    private static final ExecutorService TERMINATOR = Executors.newSingleThreadExecutor(r -> {
+        Thread t = new Thread(r, "AppRetention-terminate"); t.setDaemon(true); return t;
+    });
 
     public static final String PROP_RESTRICT_PACKAGES = "persist.hchen.restrict.packages";
     public static final String PROP_IMMEDIATE_KILL = "persist.hchen.restrict.immediate_kill";
@@ -64,6 +69,8 @@ public final class BackgroundRestrictOpt {
         hookRecentTasksRemove();
         hookBroadcastWakeupSuppression();
         hookForegroundActivitiesChanged();
+        hookActivityRecordLifecycle();
+        hookActivityTaskManagerServiceActivityStopped();
         XposedLog.logI(TAG, "BackgroundRestrictOpt initialized with bounded lifecycle hooks.");
     }
 
@@ -285,7 +292,7 @@ public final class BackgroundRestrictOpt {
                                         } catch (Throwable ignored) {}
 
                                         XposedLog.logI(TAG, "ActivityRecord.setState(" + stateName + "): terminating " + pkg + " (pid=" + pid + ")");
-                                        terminatePackage(pkg, pid, "activity_state_" + stateName.toLowerCase());
+                                        terminatePackage(pkg, pid, "activity_state_" + stateName.toLowerCase(java.util.Locale.ROOT));
                                     }
                                 }
                             } catch (Throwable ignored) {}
@@ -389,13 +396,13 @@ public final class BackgroundRestrictOpt {
                                 if (arg.getClass().getName().endsWith("HostingRecord")) {
                                     try {
                                         Object typeObj = callMethod(arg, "getType");
-                                        String type = typeObj != null ? typeObj.toString().toLowerCase() : "";
+                                        String type = typeObj != null ? typeObj.toString().toLowerCase(java.util.Locale.ROOT) : "";
                                         if (type.contains("broadcast") || type.contains("backup")) {
                                             isBackgroundWakeup = true;
                                         }
                                     } catch (Throwable ignored) {}
                                 } else if (arg instanceof String) {
-                                    String str = ((String) arg).toLowerCase();
+                                    String str = ((String) arg).toLowerCase(java.util.Locale.ROOT);
                                     if (str.equals("broadcast") || str.equals("backup")) {
                                         isBackgroundWakeup = true;
                                     }
@@ -404,7 +411,10 @@ public final class BackgroundRestrictOpt {
 
                             if (pkg != null && isRestricted(pkg) && isBackgroundWakeup) {
                                 XposedLog.logI(TAG, "Suppressed background broadcast auto-restart for restricted app: " + pkg);
-                                returnNull();
+                                Class<?> type = m.getReturnType();
+                                if (type == boolean.class || type == Boolean.class) setResult(false);
+                                else if (type == int.class || type == Integer.class) setResult(0);
+                                else if (!type.isPrimitive() || type == void.class) returnNull();
                             }
                         }
                     });
@@ -468,14 +478,24 @@ public final class BackgroundRestrictOpt {
 
     public static void terminatePackage(String packageName, int pid, String reason) {
         if (!ForkFeatureGate.isEnabled() || packageName == null || packageName.isEmpty() || pid <= 0) return;
-        final int targetPid = pid;
-        new Handler(Looper.getMainLooper()).post(() -> {
+        TERMINATOR.execute(() -> {
             if (!ForkFeatureGate.isEnabled() || !isRestricted(packageName)) return;
-            try {
-                android.os.Process.killProcess(targetPid);
-                XposedLog.logD(TAG, "Killed restricted pid=" + targetPid + ", reason=" + reason);
-            } catch (Throwable t) {
-                XposedLog.logW(TAG, "Failed to kill restricted pid=" + targetPid + ": " + t.getMessage());
+            if (!"recents_cleared".equals(reason) && !isImmediateKillEnabled()) return;
+            // Re-check the live kernel ADJ and PID ownership off the hook/AMS thread.
+            // A stale lifecycle event must not kill a newly foreground or reused PID.
+            try (BufferedReader cmd = new BufferedReader(new FileReader("/proc/" + pid + "/cmdline"));
+                 BufferedReader score = new BufferedReader(new FileReader("/proc/" + pid + "/oom_score_adj"))) {
+                String name = cmd.readLine();
+                if (name == null) return;
+                int nul = name.indexOf('\0');
+                if (nul >= 0) name = name.substring(0, nul);
+                if (!name.equals(packageName) && !name.startsWith(packageName + ":")) return;
+                int adj = Integer.parseInt(score.readLine().trim());
+                if (adj < 400 || adj > 1000) return;
+                android.os.Process.killProcess(pid);
+                XposedLog.logD(TAG, "Killed restricted pid=" + pid + ", reason=" + reason);
+            } catch (Throwable error) {
+                XposedLog.logW(TAG, "Skipped restricted termination pid=" + pid + ": " + error.getMessage());
             }
         });
     }
