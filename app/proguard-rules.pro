@@ -1,29 +1,24 @@
-# ProGuard / R8 Optimization Rules for AppRetention
--keepattributes *Annotation*,Signature,InnerClasses,EnclosingMethod,SourceFile,LineNumberTable
+# Add project specific ProGuard rules here.
+# You can control the set of applied configuration files using the
+# proguardFiles setting in build.gradle.
+#
+# For more details, see
+#   http://developer.android.com/guide/developing/tools/proguard.html
 
-# Preserve Xposed Framework interfaces and entry points
--keep class io.github.libxposed.** { *; }
--keep class de.robv.android.xposed.** { *; }
--keep class com.hchen.appretention.HookInit { *; }
+# If your project uses WebView with JS, uncomment the following
+# and specify the fully qualified class name to the JavaScript interface
+# class:
+#-keepclassmembers class fqcn.of.javascript.interface.for.webview {
+#   public *;
+#}
 
-# Preserve all AppRetention hooks, reflection data, and UI classes
--keep class com.hchen.appretention.hook.** { *; }
--keep class com.hchen.appretention.data.** { *; }
--keep class com.hchen.appretention.log.** { *; }
--keep class com.hchen.appretention.ui.** { *; }
+# Uncomment this to preserve the line number information for
+# debugging stack traces.
+#-keepattributes SourceFile,LineNumberTable
 
-# Preserve HookTool & Collect libraries
--keep class com.hchen.hooktool.** { *; }
--keep class com.hchen.collect.** { *; }
+# If you keep the line number information, uncomment this to
+# hide the original source file name.
+#-renamesourcefileattribute SourceFile
 
-# Preserve native bridge & low-level libraries
--keep class org.luckypray.dexkit.** { *; }
--keep class org.lsposed.hiddenapibypass.** { *; }
-
-# Preserve Parcelable CREATORs
--keepclassmembers class * implements android.os.Parcelable {
-    static ** CREATOR;
-}
-
-# Ignore third-party library compilation warnings
--dontwarn **
+-keep class com.hchen.appretention.HookInlet
+-keep class * extends com.hchen.appretention.mode.Hook
